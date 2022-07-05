@@ -65,6 +65,7 @@ blosum = {'A': {'A': 4, 'R': -1, 'N': -2, 'D': -2, 'C': 0, 'Q': -1, 'E': -1, 'G'
 	'X': {'A': 0, 'R': -1, 'N': -1, 'D': -1, 'C': -2, 'Q': -1, 'E': -1, 'G': -1, 'H': -1, 'I': -1, 'L': -1, 'K': -1, 'M': -1, 'F': -1, 'P': -2, 'S': 0, 'T': 0, 'W': -2, 'Y': -1, 'V': -1, 'B': -1, 'Z': -1, 'X': -1, '*': -4}, \
 	'*': {'A': -4, 'R': -4, 'N': -4, 'D': -4, 'C': -4, 'Q': -4, 'E': -4, 'G': -4, 'H': -4, 'I': -4, 'L': -4, 'K': -4, 'M': -4, 'F': -4, 'P': -4, 'S': -4, 'T': -4, 'W': -4, 'Y': -4, 'V': -4, 'B': -4, 'Z': -4, 'X': -4, '*': 1}}
 
+#codon to amino acid translation for standard genetic code
 rev_translate = {'I' : ['ATT', 'ATC', 'ATA'],
                'L' : ['CTT', 'CTC', 'CTA', 'CTG', 'TTA', 'TTG'],
                'V' : ['GTT', 'GTC', 'GTA', 'GTG'],
@@ -88,6 +89,7 @@ rev_translate = {'I' : ['ATT', 'ATC', 'ATA'],
                '*' : ['TAA', 'TAG', 'TGA']}
 translate = {codon : aa for aa,v in rev_translate.items() for codon in v}
 
+#three-letter and one-letter code correspondence for amino acids
 aa_to_3aa = {'A': 'ALA', 'R': 'ARG', 'N': 'ASN', 'D': 'ASP', 'B': 'ASX', 'C': 'CYS', 'E': 'GLU', 'Q': 'GLN', 'Z': 'GLX', 'G': 'GLY', 'H': 'HIS', 'I': 'ILE', 'L': 'LEU', 'K': 'LYS', 'M': 'MET', 'F': 'PHE', 'P': 'PRO', 'S': 'SER', 'T': 'THR', 'W': 'TRP', 'Y': 'TYR', 'V': 'VAL'}
 triple_to_aa = {'ALA': 'A', 'ARG': 'R', 'ASN': 'N', 'ASP': 'D', 'ASX': 'B', 'CYS': 'C', 'GLU': 'E', 'GLN': 'Q', 'GLX': 'Z', 'GLY': 'G', 'HIS': 'H', 'ILE': 'I', 'LEU': 'L', 'LYS': 'K', 'MET': 'M', 'PHE': 'F', 'PRO': 'P', 'SER': 'S', 'THR': 'T', 'TRP': 'W', 'TYR': 'Y', 'VAL': 'V', 'CSD': 'C', 'HYP': 'P', 'BMT': 'T', '5HP': 'E', 'ABA': 'A', 'AIB': 'A', 'CSW': 'C', 'OCS': 'C', 'DAL': 'A', 'DAR': 'R', 'DSG': 'N', 'DSP': 'D', 'DCY': 'C', 'DGL': 'E', 'DGN': 'Q', 'DHI': 'H', 'DIL': 'I', 'DIV': 'V', 'DLE': 'L', 'DLY': 'K', 'DPN': 'F', 'DPR': 'P', 'DSN': 'S', 'DTH': 'T', 'DTY': 'Y', 'DVA': 'V', 'CGU': 'E', 'KCX': 'K', 'LLP': 'K', 'CXM': 'M', 'FME': 'M', 'MLE': 'L', 'MVA': 'V', 'NLE': 'L', 'PTR': 'Y', 'ORN': 'A', 'SEP': 'S', 'TPO': 'T', 'PCA': 'E', 'SAR': 'G', 'CEA': 'C', 'CSO': 'C', 'CSS': 'C', 'CSX': 'C', 'CME': 'C', 'TYS': 'Y', 'TPQ': 'F', 'STY': 'Y'}
 
@@ -115,8 +117,7 @@ aa_data = {
 	'Y' : {"Charge": 0, "Polar Neutral": 0, "Aromatic": 1, "Large": 1, "Small": 0, "Hydrophobicity": -1.3}	
 }
 
-dbfeats = ['Non-synonimous-1, Synonymous-2', 'Disease-associated (1-yes, 2-no)', 'Mutation Code# (WTnt & nt# & Mutnt)', 'nt (WT)', 'nt (mut)', 'Amino Acid #', 'Position in the codon', 'RS #', 'Duplicates within section', 'Duplicates across sections', 'Entered manually', 'Done through program', 'AA (WT)', 'AA (mut)', 'Codon (WT)', 'Codon (mut)', 'Codon Pair-1 (WT)', 'Codon Pair-2 (WT)', 'Codon Pair-1 (mut)', 'Codon Pair-2 (mut)', 'ORF nt#        (A of ATG=1)', 'Exon#', 'Known mechanisms (if any)', 'Reference paper (First_Last authors_JournalName_Year_XXX)', 'Does mutation remove or create CpG?  (1-Yes, 0-No)', 'Type of nt change (0-Transition, 1-Transversion)', 'Near Splice Junction (< 7 nt)? (1-Yes,  0-No)', 'Alpha Helix', 'Beta Sheet', 'Turn', 'No Structure Predicted', 'Domain from Uniprot', 'Binding site', 'Metal binding', 'Active Site', 'Cleavage site', 'Site', 'Phosphorylation', 'Glycosylation', 'Disulfide bond', 'Lipidation', 'Cross-link', 'Other modified residues', 'Free column', 'Free column.1', 'Other PTM', 'Cystein (in WT)(1-Yes, 0-No) 21 yes', 'Prolin (in WT) (1-Yes, 2-No)  3 yes', 'Cysteine Involved? 1-Yes 0-No', 'Proline Involved? 1-Yes 2-No', 'Final Amino Acid (WT)', 'Charge (WT)', 'Polar Neutral: Y, N, C, Q, S, T', 'Aromatic: F, W, Y', 'Large: M, F, W, Y, Q, R, H, K', 'Small: A, G', 'Hydrophobicity Scale (WT)', 'Phosphorylation Potential (WT)', 'Final Amino Acid (mut)', 'Charge (mut)', 'Hydrophobicity Scale (Mut)', 'Positive to Negative', 'Negative to Positive', 'Positive/Negative to Neutral', 'Neutral to Positive/Negative', 'No change', '∆Charge (mut-WT)', '∆Hydrophobicity Scale (mut-WT)', '∆Phosphorylation Potential (mut-WT)', 'GC content of 151 nt (WT)', 'GC content of 151 nt (Mut)', 'ΔGC content of 151 nt (mut-WT)', 'Codon (WT).1', 'Codon (mut).1', 'Amino Acid (WT)', 'Amino Acid (mut)', 'WT RSCU (genome)', 'Mutant RSCU (genome)', 'ΔRSCU (mut - WT) (genome)', 'WT RSCU (genome) < 0.75', 'WT W (genome)', 'Mutant W (genome)', 'ΔW (mut - WT)(genome)', 'Bicodon-1 (WT-upstream)', 'Bicodon-2 (WT-downstream)', 'Bi-amino acids-1 (WT)', 'Bi-amino acids-2 (WT)', 'RSBCU-1 (WT)', 'RSBCU-2 (WT)', 'Bicodon-1 (mutated codon and upstream)', 'Bicodon-2 (mutated codon and downstream)', 'Bi-amino acids-1 (Mut)', 'Bi-amino acids-2 (Mut)', 'RSBCU-1 (Mut)', 'RSBCU-2 (Mut)', 'ΔRSBCU-1 (mut - WT)(genome)', 'ΔRSBCU-2 (mut - WT)(genome)', 'CPS-1 (WT)', 'CPS-2 (WT)', 'CPS-1 (Mut)', 'CPS-2 (Mut)', 'ΔCPS-1 (mut - WT)(genome)', 'ΔCPS-2 (mut - WT)(genome)', 'Noln: CPS-1 (WT)', 'Noln: CPS-2 (WT)', 'Noln: CPS-1 (Mut)', 'Noln: CPS-2 (Mut)', 'Noln: ΔCPS-1 (mut - WT)(genome)', 'Noln: ΔCPS-2 (mut - WT)(genome)', 'A RSCU, WT data (gene)', 'B RSCU, WT data (gene)', 'A RSCU, Mut data (gene)', 'B RSCU, Mut data (gene)', 'ΔRSCU (WT B - WT A) (gene)', 'ΔRSCU (Mut B - WT A) (gene)', 'ΔRSCU (Mut A - WT A) (gene)', 'ΔRSCU (Mut B - WT B) (gene)', 'A W, WT data (gene)', 'B W, WT data (gene)', 'A W, Mut data (gene)', 'B W, Mut data (gene)', 'ΔW (WT B - WT A) (gene)', 'ΔW (Mut B - WT A) (gene)', 'ΔW (Mut A - WT A) (gene)', 'ΔW (Mut B - WT B) (gene)', 'A RSBCU-1, WT data (gene)', 'A RSBCU-2, WT data (gene)', 'B RSBCU-1, WT data (gene)', 'B RSBCU-2, WT data (gene)', 'A RSBCU-1, Mut data (gene)', 'A RSBCU-2, Mut data (gene)', 'B RSBCU-1, Mut data (gene)', 'B RSBCU-2, Mut data (gene)', 'ΔRSCBU 1 (WT B - WT A) (gene)', 'ΔRSCBU 1 (Mut B - WT A) (gene)', 'ΔRSCBU 1 (Mut A - WT A) (gene)', 'ΔRSCBU 1 (Mut B - WT B) (gene)', 'ΔRSCBU 2 (WT B - WT A) (gene)', 'ΔRSCBU 2 (Mut B - WT A) (gene)', 'ΔRSCBU 2 (Mut A - WT A) (gene)', 'ΔRSCBU 2 (Mut B - WT B) (gene)', 'CPS: 1-A WT data (gene)', 'CPS: 2-A WT data (gene)', 'CPS: 1-B WT data (gene)', 'CPS: 2-B WT data (gene)', 'CPS: 1-A Mut data (gene)', 'CPS: 2-A Mut data (gene)', 'CPS: 1-B Mut data (gene)', 'CPS: 2-B Mut data (gene)', 'ΔCPS 1 (WT B - WT A) (gene)', 'ΔCPS 1 (Mut B - WT A) (gene)', 'ΔCPS 1 (Mut A - WT A) (gene)', 'ΔCPS 1 (Mut B - WT B) (gene)', 'ΔCPS 2 (WT B - WT A) (gene)', 'ΔCPS 2 (Mut B - WT A) (gene)', 'ΔCPS 2 (Mut A - WT A) (gene)', 'ΔCPS 2 (Mut B - WT B) (gene)', 'A Noln: 1 WT data (gene)', 'A Noln: 2 WT data (gene)', 'B Noln: 1 WT data (gene)', 'B Noln: 2 WT data (gene)', 'A Noln: 1 Mut data (gene)', 'A Noln: 2 Mut data (gene)', 'B Noln: 1 Mut data (gene)', 'B Noln: 2 Mut data (gene)', 'ΔNoln 1 (WT B - WT A) (gene)', 'ΔNoln 1 (Mut B - WT A) (gene)', 'ΔNoln 1 (Mut A - WT A) (gene)', 'ΔNoln 1 (Mut B - WT B) (gene)', 'ΔNoln 2 (WT B - WT A) (gene)', 'ΔNoln 2 (Mut B - WT A) (gene)', 'ΔNoln 2 (Mut A - WT A) (gene)', 'ΔNoln 2 (Mut B - WT B) (gene)', 'ESR WT1', 'ESR WT2', 'ESR Mut1', 'ESR Mut2', 'ESR_seq delta 1', 'ESR_seq delta 2', 'Z_EI WT1', 'Z_EI WT2', 'Z_EI Mut1', 'Z_EI Mut2', 'Z_EI delta 1', 'Z_EI delta 2', 'Z_WS WT 1', 'Z_WS WT 2', 'Z_WS Mut 1', 'Z_WS Mut 2', 'Z_WS delta 1', 'Z_WS delta 2']
-
+#Input: Location of spreadsheet containing SNP geneview output
 def parse_SNP_geneview(df, sheet_name="Coding Seq", columns = {('Chr.', 'position'): 'Chr. pos', ('mRNA', 'pos'): 'mRNA pos', ('dbSNP rs#', 'cluster id'): 'dbSNP rsid', ('Hetero-', 'zygosity'): 'Heterozygosity', ('Clinical', 'Significance'): 'Clin sig', ('Protein', 'residue'): 'Amino acid', ('Codon', 'pos'): 'Codon pos', ('Amino acid', 'pos'): 'AA position'}, header=[0,1], skiprows=[0]):
 	df = pd.read_excel(df, sheet_name=sheet_name, header=header, skiprows=skiprows)
 	data = {}
@@ -135,6 +136,8 @@ def parse_SNP_geneview(df, sheet_name="Coding Seq", columns = {('Chr.', 'positio
 					data[k]["mRNA pos"] = int(v2["mRNA pos"])
 	return(data)
 
+#Input: Name of gene of interest, RefSeq accession ID, numeric gene ID, taxonomy ID of organism of interest (human by default)
+#Output: SNP geneview of all SNVs in gene
 def get_SNP_geneview(genename, nm="", geneid="", taxid=9606, funcfilt={}):
 	if len(nm) < 1:
 		accids = bio_tools.get_accids(genename)["mRNA"]
@@ -190,6 +193,8 @@ def get_SNP_geneview(genename, nm="", geneid="", taxid=9606, funcfilt={}):
 	data = verify_SNP_geneview(data, nm=nm, funcfilt=funcfilt)
 	return(data)
 	
+#Input: data dictionary of SNP geneview, RefSeq accession ID
+#Output: data dictionary with warnings for inconsistent/mismatching nucleotide and amino acid information and inconsistant clinical significance information
 def verify_SNP_geneview(data, nm="", funcfilt={}):
 	if len(nm) < 1:
 		accids = bio_tools.get_accids(data[list(data.keys())[0]]["GENE"])["mRNA"]
@@ -259,7 +264,8 @@ def verify_SNP_geneview(data, nm="", funcfilt={}):
 	data = data.sort_values(["warnings", "Function", "Clinical Significance"])
 	return(data)
 
-#finds distribution of characters at each position of alignment
+#Input: multiple sequence alignment, name of focus sequence
+#Output: distribution of characters at each position of focus sequence in MSA
 def compute_distribution(seqs, genename, space="-", alphabet="", freq=True):
 	joined_seqs = "".join(seqs.values()).replace(space, "")
 	alphabet = sorted(set([alphabet[i] for i in range(len(alphabet))] + [joined_seqs[i] for i in range(len(joined_seqs))]))
@@ -281,6 +287,9 @@ def compute_distribution(seqs, genename, space="-", alphabet="", freq=True):
 			location += 1
 	return(distribution)
 
+#Input: Command to run as a subprocess (externally)
+#Output: Shell output of command
+#Designed to avoid hanging processes
 def getoutput_timer(cmd, t=60, interval=0.1):
 	def getoutput(cmd, q):
 		output = subprocess.getoutput(cmd)
@@ -308,6 +317,8 @@ def getoutput_timer(cmd, t=60, interval=0.1):
 		t2.terminate()
 		return(None)
 
+#Input: ORF nucleotide sequence (start codon to stop codon)
+#Output: translated amino acid sequence
 def translate_seq(seq):
 	aaseq = ""
 	for i in range(len(seq)//3):
@@ -321,7 +332,9 @@ def translate_seq(seq):
 	return(aaseq)
 	#return("".join([translate[seq[3*i:3*(i+1)]] for i in range(len(seq)//3)]))
 
-#Process which iteratively takes genes from queue and computes features (can use multiprocessing)
+#Intput: queue, dictionary of genename: data
+#Output: None
+#Runs processes across multiple processes if possible
 def work(q, data, ids={}, seqdir="./gene_data", path=ram_disk, outdir="./gene_data/", skip_done=False, pdb=None, space="-", quiet=False):
 	while not q.empty():
 		genename = q.get()
@@ -349,7 +362,8 @@ def work(q, data, ids={}, seqdir="./gene_data", path=ram_disk, outdir="./gene_da
 			ids[genename] = geneids
 	pd.DataFrame(ids).to_csv(outdir + "gene_info_updated.tsv", sep="\t")
 
-#runs mfold
+#Input: nucleotide sequence
+#Output: predicted mRNA folding energy
 def run_mfold(seq, genename="pholder", t=60, path=ram_disk):
 	pwd = os.getcwd()
 	os.chdir(path)
@@ -364,6 +378,8 @@ def run_mfold(seq, genename="pholder", t=60, path=ram_disk):
 	else:
 		return(None)
 
+#Input: nucleotide sequence
+#Output: predicted mRNA folding energy
 def run_nupack(seq, genename="", t=60, path=ram_disk):
 	with open(os.path.join(path, "tmp.in"), "w") as outf:
 		outf.write(seq)
@@ -379,7 +395,8 @@ def run_nupack(seq, genename="", t=60, path=ram_disk):
 					else:
 						return(float(line))
 
-#calls kinefold on a sequence
+#Input: nucleotide sequence
+#Output: predicted mRNA folding energy
 #memory folders are preferred as path, as it writes multiple temporary files
 def run_kinefold(seq, path=ram_disk, t=60, seed=None):
 	if not isinstance(seed, int):
@@ -426,6 +443,8 @@ def run_kinefold(seq, path=ram_disk, t=60, seed=None):
 		raise(e)
 	return(energy)
 
+#Input: nucleotide sequence
+#Output: predicted mRNA folding energy
 def get_RNAfold(seq, path=ram_disk, t=60):
 	#write sequence file
 	with open(path + "tmp.in", "w") as outf:
@@ -440,6 +459,8 @@ def get_RNAfold(seq, path=ram_disk, t=60):
 		raise(e)
 	return(energy)
 
+#unfinished
+'''
 def get_seblastian(seq, genename, path=ram_disk, wait_time=60, give_up=12):
 	r = tools.retry_request(requests.post, ["https://seblastian.crg.es/cgi-bin/seblastian_cgi.py"], {'data':{"routine": "Seblastian", "seblastian_mode": "knownSP", "seblastian_upstream_length": "5000", "seblastian_blast_evalue": "1e-3", "seblastian_max_distance": "3000", "search_complement": "on", "secis_filter": "secis_filter", "make_images": "make_images", "image_resolution": "150", "use_infernal": "infernal", "infernal_threshold": "10", "use_covels": "covels", "covels_threshold": 5, "use_secisearch1": "secisearch", "secisearch_pattern": "default", "sequence_filename": "(binary)", "sequence_fasta": seq}})
 	html = re.findall("https\:\/\/seblastian\.crg\.es\/results\/\d+\/index\.html", r.text)
@@ -485,7 +506,10 @@ def get_seblastian(seq, genename, path=ram_disk, wait_time=60, give_up=12):
 	p = Process(target=wait_for_seblastian, args=(seq, genename, html, path, wait_time, give_up, True))
 	p.start()
 	return(p)
+'''
 	
+#unfinished
+'''
 def run_genesplicer(seqs, mut, directory="/media/home/software/GeneSplicer/human/", path=ram_disk):
 	pos, nts = tools.get_mutation_data(mut)
 	genomicpos, error = convert_position(seqs["ORF_aligned"], seqs["genomic_aligned"], pos)
@@ -508,7 +532,11 @@ def run_genesplicer(seqs, mut, directory="/media/home/software/GeneSplicer/human
 	
 	dif = {"Gained":{k:v for k,v in mutscores.items() if k not in wtscores.keys()}, "Lost":{k:v for k,v in wtscores.items() if k not in mutscores.keys()}, "Changes":{k:(wtscores[k], mutscores[k]) for k in wtscores.keys() if k in mutscores and mutscores[k] != wtscores[k]}}
 	return(dif)
+'''
 
+#Input: nucleotide ORF sequence, name of focus sequence
+#Output: %minmax of sequence at each position, and %minmax of a random reverse-translated control sequence
+#Note: this computes the %minmax on a network server and is very slow
 def get_minmax(ORF, genename):
 	headers = {"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9", "Accept-Encoding": "gzip, deflate", "Accept-Language": "en-US,en;q=0.9", "Cache-Control": "max-age=0", "Connection": "keep-alive", "Content-Length": "2518", "Content-Type": "application/x-www-form-urlencoded", "Host": "www.codons.org", "Origin": "http://www.codons.org", "Referer": "http://www.codons.org/index.html", "Upgrade-Insecure-Requests": "1", "User-Agent": "Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36"}
 	data = {"Gene_Sequence": ">" + genename + "\n" + ORF, "Get_Codon_Usage": "CI-horfeome31.fa", "User_Codon_Usage_Text": "", "RRT_Check_Box": "On"}
@@ -535,6 +563,9 @@ def get_minmax(ORF, genename):
 			newdata["%minmax control"].append("")
 	return(newdata)
 
+#Input: nucleotide ORF sequence, name of focus sequence, dictionary of codon:count data, dictionary of codon pair:codon pair data
+#Output: %minmax of sequence at each position, and %minmax of a random reverse-translated control sequence
+#Note: this computes the %minmax locally (on your computer) and doesn't use network calls
 def minmax_local(ORF, genename, codonusage, cpusage=None, control=100):
 	avgcodon = {aa:statistics.mean([codonusage[codon] for codon in rev_translate[aa]]) for aa in rev_translate.keys()}
 	mincodon = {aa:min([codonusage[codon] for codon in rev_translate[aa]]) for aa in rev_translate.keys()}
@@ -560,6 +591,8 @@ def minmax_local(ORF, genename, codonusage, cpusage=None, control=100):
 	else:
 		return(minmax)
 
+#Unfinished
+'''
 def minmax_optimized(ORF, codonusage, control=100, window=18):
 	avgcodon = {aa:statistics.mean([codonusage[codon] for codon in rev_translate[aa]]) for aa in rev_translate.keys()}
 	mincodon = {aa:min([codonusage[codon] for codon in rev_translate[aa]]) for aa in rev_translate.keys()}
@@ -586,8 +619,11 @@ def minmax_optimized(ORF, codonusage, control=100, window=18):
 	minmax = data[0]["%minmax"]
 	minmax_control = {i:statistics.mean([data[j]["%minmax"][i] for j in data.keys() if j != 0]) for i in data[0]["%minmax"].keys()}
 	return(minmax, minmax_control)
+'''
 
-#calls remuRNA on a sequence
+#Input: nucleotide sequence
+#Optional inputs: mutation string
+#Output: predicted mRNA folding energy of WT sequence, mutant sequence, difference of mRNA folding energies, and H value
 #memory folders are preferred as path, as it writes multiple temporary files
 def run_remuRNA(seq, mut=None, path=ram_disk):
 	if isinstance(mut, str):
@@ -612,6 +648,8 @@ def run_remuRNA(seq, mut=None, path=ram_disk):
 		print(output)
 	return(float(retvals[1]), float(retvals[2]), float(retvals[4]), float(retvals[5]))
 
+#Input: aligned ORF sequence (includes "-" gaps in introns and UTRs), aligned transcript (includes "-" gaps in introns)
+#Output: mRNA MFE across ORF sequence (scaled between 0-1 values)
 #computes mRNA sequences along sequence, scaling it to in [0,1]
 def relative_mRNA_MFE(ORF_aligned, transcript_aligned, l=75, space="-"):
 	ORF = ORF_aligned.replace(space, "")
@@ -632,7 +670,9 @@ def relative_mRNA_MFE(ORF_aligned, transcript_aligned, l=75, space="-"):
 	energies = [(energies[i] - minenergy)/(maxenergy - minenergy) for i in range(len(energies))]
 	return(energies)
 
-#calls blast, returns sequences found
+#Input: Any sequence, name of focus sequence, mode of operation ("amino acid" or "nucleotide", database to BLAST ("nt" or "nr"), program to use ("blastp" or "blastn"), whether to write to disk, any keywords for sequences to exclude
+#Output: sequences returned from BLAST
+#Note: if mode, db, and program are not specified, these are inferred from the sequence
 def run_blast(seq, genename, mode=None, db=None, program=None, write=False, forbidden=None, path=ram_disk, space="-", size=2000, quiet=False, args={}):
 	if mode == None:
 		mode = tools.infer_alphabet(seq)
@@ -685,7 +725,9 @@ def run_blast(seq, genename, mode=None, db=None, program=None, write=False, forb
 		tools.write_fasta(seqs, os.path.join(path, mode + "_msa.fasta"))
 	return(seqs)
 
-#calls blast, downloads accession ids, returns sequences
+#Input: Any sequence, name of sequence, mode ("amino acid" or "nucleotide")
+#Output: sequences returned from BLAST
+#Note: full sequences are downloaded (individually), rather than simply hit regions
 def run_blast_gb(seq, genename, mode=None, write=False, forbidden=None, path=ram_disk, space="-", size=2000, email=Entrez.email, apikey=Entrez.api_key, quiet=False):
 	Entrez.email = email
 	Entrez.api_key = apikey
@@ -707,6 +749,8 @@ def run_blast_gb(seq, genename, mode=None, write=False, forbidden=None, path=ram
 		tools.write_fasta(seqs, path + mode + "_msa.fasta")
 	return(seqs)
 
+#Input: List of RefSeq accessions, mode to search in ("protein" or "nucleotide"), Entrez email and key
+#Output: sequences for each accession ID
 def get_accid_seqs(accids, mode, email=Entrez.email, apikey=Entrez.api_key):
 	Entrez.email = email
 	Entrez.api_key = apikey
@@ -732,6 +776,8 @@ def get_accid_seqs(accids, mode, email=Entrez.email, apikey=Entrez.api_key):
 				break
 	return(seqs)
 
+#Input: multiple sequences (output from run_blast), name of focus sequence
+#Output: multiple sequence alignment
 def align_blast(seqs, genename, space="-", minlength=0.25, minsubset=0.5):
 	'''
 	seqs = {k:v.replace(space, "") for k,v in seqs}
@@ -742,7 +788,8 @@ def align_blast(seqs, genename, space="-", minlength=0.25, minsubset=0.5):
 	seqs = {k:v for k,v in seqs.items() if "query" not in k}
 	return(seqs)
 
-#aligns sequences, then computes conservation measures
+#Input: sequences from BLAST, name of focus sequence
+#Output: multiple sequence alignment, percent matching, entropy, variance, and also sum_of_pairs conservation scores
 def compute_conservation(seqs, genename, space="-", mode="nt"):
 	overall_p = {}
 	for name, seq in seqs.items():
@@ -804,6 +851,8 @@ def compute_conservation(seqs, genename, space="-", mode="nt"):
 	else:
 		return(seqs, identity, entropy, variance)	
 
+#Input: position of variant in coding sequence, nucleotides changes (reference and mutant), and name of gene
+#Output: prediction scores for variant, also MAFs, and any clinical significance from dbSNP
 def get_vep(pos, nts, genename, epsilon=0.001):
 	mutscores = {"Polyphen":[], "SIFT":[], "GnomAD":[], "dbSNP":None, "rsid":None}
 	mutlist = [genename + ":c." + str(pos) + nts[0] + ">" + nts[1]]
@@ -848,6 +897,8 @@ def get_vep(pos, nts, genename, epsilon=0.001):
 
 	return({"Polyphen":"", "SIFT":"", "GnomAD":"", "dbSNP":"", "rsid":""})
 
+#Intput: input to a function, function to use, default alternate value
+#Output: output of funciton in input, otherwise if errors are encountered, the default value
 def func_or_default(l, func=statistics.mean, default=0.5, verbose=False):
 	try:
 		return(func(l))
@@ -856,6 +907,8 @@ def func_or_default(l, func=statistics.mean, default=0.5, verbose=False):
 			print(e)
 		return(default)
 
+#Input: Name of gene of interest, ORF sequence of gene, any Uniprot accession ID, taxid of organism of interest
+#Output: Data from Uniprot entry that most closely matches the gene name and taxid, aligned to the sequence
 #looks up a gene on Uniprot, gets the best match (for human genes), and reads through secondary structures, and binding sites, and post-translational modifications
 def parse_uniprot(genename, ntseq, accession=None, taxid=9606):
 	preferences = ["Domain", "Region", "Topological domain", "Transmembrane"]
@@ -941,6 +994,8 @@ def parse_uniprot(genename, ntseq, accession=None, taxid=9606):
 	data["Accession"] = accession
 	return(data)
 
+#Input: a query statement for Protein Data Bank
+#Output: the match score associated with each PDB/chain found
 def query_pdb(query, quiet=False):
 	url = 'https://search.rcsb.org/rcsbsearch/v1/query'
 	req = tools.retry_request(requests.post, [url], {'data':json.dumps(query)})
@@ -957,7 +1012,9 @@ def query_pdb(query, quiet=False):
 					data[pdb][chain] = float(result["score"])
 	return(data)
 
-#search PDBs based on a Uniprot accession, and return the best match based on sequence length, additional chains (proteins), and number of ligands
+#Input: Uniprot accession ID, gene name, nucleotide ORF sequence
+#Output: List of Protein Data Bank entries matching the query, in order of best to worst match
+#searches PDBs based on a Uniprot accession, and return the best match based on sequence length, additional chains (proteins), and number of ligands
 def parse_pdb(acc, genename, ORF="", quiet=False, seqsearch_min=10):
 	aaseq = translate_seq(ORF)
 	options = ["Uniprot", "Genename", "Sequence"]
@@ -995,6 +1052,8 @@ def parse_pdb(acc, genename, ORF="", quiet=False, seqsearch_min=10):
 			print("No PDBs found for " + acc + " or " + genename)
 	return(pdbs)
 
+#Input: HTML from Dali query, name of gene, location to write file to
+#Output: data from Dali query
 def parse_dali(html, genename, path=ram_disk, write=True):
 	if not html.endswith(".html") or html.endswith("/"):
 		html = html + "s001A-25.html"
@@ -1019,7 +1078,9 @@ def parse_dali(html, genename, path=ram_disk, write=True):
 		df.T.to_csv(path + genename + "_dali.tsv", sep="\t")
 	return(newdata)
 	
-
+#Input: Name of PDB entry (ABCDE, where E is the name of the chain and ABCD is the PDB accession), name of the gene)
+#Output: Writes the output from dali to genename + "_dali.tsv"
+#This gives structurally similar protein structures
 def query_dali(pdb, genename, match=25, email=Entrez.email, path=ram_disk, space="-", wait_time=60, give_up=12):
 	pdbstr = pdb[0].lower() + pdb[1][0].upper()
 	headers = {"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9", "Accept-Encoding": "gzip, deflate", "Accept-Language": "en-US,en;q=0.9", "Cache-Control": "max-age=0", "Connection": "keep-alive", "Content-Length": "703", "Content-Type": "multipart/form-data; boundary=----WebKitFormBoundaryOVadri1CnKBpmrIC", "Host": "ekhidna2.biocenter.helsinki.fi", "Origin": "http://ekhidna2.biocenter.helsinki.fi", "Referer": "http://ekhidna2.biocenter.helsinki.fi/dali/", "Upgrade-Insecure-Requests": "1", "User-Agent": "Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36"}
@@ -1056,7 +1117,9 @@ def query_dali(pdb, genename, match=25, email=Entrez.email, path=ram_disk, space
 	return(p)
 	
 
-#creates a set from a list while maintaining order
+#Input: a list of objects
+#Output: a set
+#creates a list without duplicates while maintaining order or original list
 def sorted_set(l):
 	new_l = []
 	for li in l:
@@ -1064,6 +1127,8 @@ def sorted_set(l):
 			new_l.append(li)
 	return(new_l)
 
+#Input: Any dictionary of chain:index:data for PDB-specific data, the nucleotide ORF for the protein
+#Output: data aligned to the protein sequence
 #aligns data (keys are chains, next level of keys are positions, one of the included subkeys is aa), to ORF and generates new data
 #generates data for each chain based on best alignment with sequence (we can't assume anything about chain ordering)
 def get_aligned_data(data, ORF):
@@ -1086,7 +1151,8 @@ def get_aligned_data(data, ORF):
 			newdata[i] = {key:"" for key in newdata[min(newdata.keys())]}
 	return(newdata)	
 
-#parses ConsurfDB, given a pdb and associated chains
+#Input: name of best matching PDB entry and associated chains, nucleotide ORF sequence
+#Output: conservation scores for each position in PDB entry for all chains given
 def get_consurf(pdb, chains, ORF):
 	data = {}
 	prevpos = -1
@@ -1113,7 +1179,9 @@ def get_consurf(pdb, chains, ORF):
 	scores = [newdata[i]["Conservation score"] for i in range(len(ORF)//3)]
 	return(scores)
 
-#queries Consurf based on the AA sequence, returns a process which waits for the data and eventually writes to file when Consurf is finished
+#Input: nucleotide ORF sequence, gene name, location to write to
+#Output: conservation score and buried/exposed score at all positions in sequence
+#Currently doesn't work, as Consurf has changed their website
 def get_consurf_seq(ORF, genename, path=ram_disk, space="-", wait_time=60, give_up=12, quiet=True):
 	aaseq = max(re.findall("[ACDEFGHIKLMNPQRSTVWY]+", translate_seq(ORF)), key=len) #maximal length protein sequence with only aa symbols
 	response = tools.retry_request(requests.post, ["http://consurf.tau.ac.il/cgi-bin/consurf.cgi"], {"data":{"DNA_AA": "AA", "pdb_ID": "", "pdb_FILE": "", "PDB_chain": "", "PDB_yes_no": "yes", "modeller_key": "", "MSA_yes_no": "yes", "msa_FILE_ajax": "(binary)", "MAX_FILE_SIZE": "300000", "msa_SEQNAME_ajax": "", "msa_FILE": "(binary)", "msa_SEQNAME": "", "FASTA_text": genename + "\n" + aaseq, "Homolog_search_algorithm": "HMMER", "ITERATIONS": "1", "E_VALUE": "0.01", "proteins_DB": "UNIREF90", "user_select_seq": "no", "MAX_NUM_HOMOL": "250", "best_uniform_sequences": "uniform", "MAX_REDUNDANCY": 95, "MIN_IDENTITY": 35, "MSAprogram": "MAFFT", "tree_FILE": "(binary)", "ALGORITHM": "Bayes", "SUB_MATRIX": "BEST", "JOB_TITLE": genename, "user_email": "", "submitForm": "Submit"}})
@@ -1173,6 +1241,8 @@ def get_consurf_seq(ORF, genename, path=ram_disk, space="-", wait_time=60, give_
 	p.start()
 	return(p)
 
+#Input: text string from Consurf output (either from HTML or locally copied file)
+#Output: conservation score and buried/exposed score from Consurf
 def parse_consurf(text):
 	data = {}
 	for i, line in enumerate(text.split("\n")):
@@ -1262,7 +1332,8 @@ def codon_conservation(filename, genename, alphabet=["T","C", "A", "G", "t", "c"
 	seqs = tools.read_fasta(output, aformat="WHOLE")
 	
 	inverted_seqs = {i:{name:seqs[name][3*i:3*(i+1)] for name in seqs} for i in range(len(seqs[genename])//3)}
-
+	
+	#compute the overall distribution of codons in the alignment
 	overall_p = {}
 	for name, seq in seqs.items():
 		for i in range(len(seq)//3):
@@ -1327,7 +1398,8 @@ def codon_conservation(filename, genename, alphabet=["T","C", "A", "G", "t", "c"
 			'''
 	return(identity, entropy, variance)
 
-#queries mutationtaster webserver
+#unfinished
+'''
 def mutation_taster(genename, pos, mutnt):
 	response = tools.retry_request(requests.post, ["http://www.mutationtaster.org/cgi-bin/MutationTaster/MutationTaster69.cgi"], {"data":{"gene":genename, "ajax":1}})
 	transcripts = re.findall("\"(ENST\d+)\"", response.text)
@@ -1346,7 +1418,10 @@ def mutation_taster(genename, pos, mutnt):
 	if invert:
 		prob = 1 - prob
 	return({"Pr Neutral":prob, "Disease":invert})
+'''
 
+#unfinished
+'''
 def get_PrDSM(genename, ntvars, PrDSM_loc="/media/home/software/PrDSM/PrDSM_Grch37_20190304.vcf.gz.tbi"):
 	accid_to_chrom = {'NC_000001': '1', 'NC_000002': '2', 'NC_000003': '3', 'NC_000004': '4', 'NC_000005': '5', 'NC_000006': '6', 'NC_000007': '7', 'NC_000008': '8', 'NC_000009': '9', 'NC_000010': '10', 'NC_000011': '11', 'NC_000012': '12', 'NC_000013': '13', 'NC_000014': '14', 'NC_000015': '15', 'NC_000016': '16', 'NC_000017': '17', 'NC_000018': '18', 'NC_000019': '19', 'NC_000020': '20', 'NC_000021': '21', 'NC_000022': '22', 'NC_000023': 'X', 'NC_000024': 'Y'}
 	seqs, cdses, mRNA, protein = bio_tools.pipeline(genename, outdir="./gene_data/", organism="homo sapiens", write=False)
@@ -1383,7 +1458,7 @@ def get_PrDSM(genename, ntvars, PrDSM_loc="/media/home/software/PrDSM/PrDSM_Grch
 			pieces = lines[0].split("\t")
 			data[(pos, nts)] = {"TraP":pieces[4], "SilVA":pieces[5], "FATHMM-MKL":pieces[6], "PrDSM":pieces[7]}
 	return(data)
-		
+'''
 
 #generates a matrix of dimension len(WT sequence) x 3, with p(indel), p(miss), p(match) in each row
 def hmm_seqs(seqs, genename, space="-", alphabet="-ACDEFGHIKLMNPQRSTVWY"):

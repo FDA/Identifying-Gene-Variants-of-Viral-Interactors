@@ -3,6 +3,8 @@ import numpy as np
 import os.path
 import tools, compute_features
 
+#Input: location of codon usage table file
+#Output: relative synonymous codon usage and codon adaptation index (as dictionaries) for codon usage
 def compute_RSCU(codons, translation_file=None, quiet=True):
 
 	if translation_file == None:
@@ -44,7 +46,8 @@ def compute_RSCU(codons, translation_file=None, quiet=True):
 
 	return(RSCU, W)
 	
-
+#Input: location of codon usage table file, link to translation file as a headerless two column TSV file
+#Output: relative synonymous codon pair usage and codon pair adaptation index (as dictionaries) for codon pair usage
 def compute_RSCPU(codonpairs, translation_file, quiet=True):
 	translation = tools.two_column_csv(translation_file)
 	cp_data = tools.two_column_csv(codonpairs)

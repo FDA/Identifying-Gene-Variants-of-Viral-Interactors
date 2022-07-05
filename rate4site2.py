@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import align_codons
 
+#Unfinished
 def process_clust(n_points, fit_cluster):
 	ii = itertools.count(n_points)
 	clusters = [{'node_id': next(ii), 'left': x[0], 'right':x[1]} for x in fit_cluster.children_]
@@ -20,6 +21,9 @@ def process_clust(n_points, fit_cluster):
 
 	return(members, on_split)
 
+#Input: multiple sequence alignment (seqs), a focus sequence (genename), and a substitution matrix (submatrix),
+#Output:a phylogeny tree based on pairwise distances
+#Note: by default, uses Levenshtein distance for the distance matrix
 def gen_tree(seqs, genename, submatrix=None, space="-", ram_disk="/media/temp/"):
 	if submatrix != None and isinstance(submatrix, dict):
 		piecelen = len(list(submatrix.keys())[0])
@@ -35,7 +39,7 @@ def gen_tree(seqs, genename, submatrix=None, space="-", ram_disk="/media/temp/")
 		names = [str(i) for i in range(len(seqs))]
 	seqs = [seqs[name] for name in names]
 	n = len(seqs)
-	try:
+	try: # assume user provided a substitution matrix that can be used by Biopython's Phylo library
 		calculator = Bio.Phylo.TreeConstruction.DistanceCalculator(submatrix)
 		tools.write_fasta({names[i]:seqs[i] for i in range(len(seqs))}, os.path.join(ram_disk, genename + "_tmp.fasta"))
 		aln = Bio.AlignIO.read(os.path.join(ram_disk, genename + "_tmp.fasta"), "fasta")
@@ -50,14 +54,14 @@ def gen_tree(seqs, genename, submatrix=None, space="-", ram_disk="/media/temp/")
 				aln = Bio.AlignIO.read(os.path.join(ram_disk, "tmp_distance.fasta"), "fasta")
 				tmp_dist = calculator.get_distance(aln)
 				submatrix[m][n] = tmp_dist[1][0]
-	except Exception as e:
+	except Exception as e: 
 		distance = [[0 for j in range(len(seqs))] for i in range(len(seqs))]
 		init_time = time.time()
 		for i in range(len(distance)):
 			seq1 = seqs[i]
 			for j in range(len(distance[i])):
 				seq2 = seqs[j]	
-				if isinstance(submatrix, (dict, pd.DataFrame)):
+				if isinstance(submatrix, (dict, pd.DataFrame)): #submatrix is usable as a substitution matrix
 					for k in range(len(seq1)//piecelen):
 						if piecelen*(k+1) <= len(seq1) and seq1[piecelen*k:piecelen*(k+1)] in submatrix and seq2[piecelen*k:piecelen*(k+1)] in submatrix[seq1[piecelen*k:piecelen*(k+1)]]:
 							distance[i][j] -= submatrix[seq1[piecelen*k:piecelen*(k+1)]][seq2[piecelen*k:piecelen*(k+1)]]
@@ -65,7 +69,7 @@ def gen_tree(seqs, genename, submatrix=None, space="-", ram_disk="/media/temp/")
 							pass
 						else:
 							distance[i][j] -= maxpenalty
-				else:
+				else: #default to Levenshtein distance
 					distance[i][j] = tools.levenshtein(seq1.replace(space, ""), seq2.replace(space, ""))
 				tools.update_time(i*n+j, n**2, init_time)
 	distance = [[(distance[i][j] + distance[j][i])/2 for j in range(i+1)] for i in range(len(seqs))]
@@ -75,7 +79,8 @@ def gen_tree(seqs, genename, submatrix=None, space="-", ram_disk="/media/temp/")
 	t = DistanceTreeConstructor().nj(DistanceMatrix(names, matrix=distance))
 	return(t, submatrix)
 	
-
+#unfinished
+#attempts to recreate rate4site for general purpose sequences (including NTs and codons)
 def rate4site2(seqs, submat, focus=None, alphabet=None, tree=None):
 	if focus == None or focus not in seqs.keys():
 		focus = list(seqs.keys())[-1]

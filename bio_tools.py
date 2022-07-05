@@ -14,10 +14,14 @@ ram_disk = "insert here"
 
 complement = {"A":"T", "T":"A", "G":"C", "C":"G"}
 
+#Gives the RefSeq chromosome accession from the assembly and chromosome name
 chromosome_map = {"GRCh37":{"1":"NC_000001.10", "2":"NC_000002.11", "3":"NC_000003.11", "4":"NC_000004.11", "5":"NC_000005.9", "6":"NC_000006.11", "7":"NC_000007.13", "8":"NC_000008.10", "9":"NC_000009.11", "10":"NC_000010.10", "11":"NC_000011.9", "12":"NC_000012.11", "13":"NC_000013.10", "14":"NC_000014.8", "15":"NC_000015.9", "16":"NC_000016.9", "17":"NC_000017.10", "18":"NC_000018.9", "19":"NC_000019.9", "20":"NC_000020.10", "21":"NC_000021.8", "22":"NC_000022.10", "X":"NC_000023.10", "Y":"NC_000024.9"},"GRCh38":{"1":"NC_000001.11", "2":"NC_000002.12", "3":"NC_000003.12", "4":"NC_000004.12", "5":"NC_000005.10", "6":"NC_000006.12", "7":"NC_000007.14", "8":"NC_000008.11", "9":"NC_000009.12", "10":"NC_000010.11", "11":"NC_000011.10", "12":"NC_000012.12", "13":"NC_000013.11", "14":"NC_000014.9", "15":"NC_000015.10", "16":"NC_000016.10", "17":"NC_000017.11", "18":"NC_000018.10", "19":"NC_000019.10", "20":"NC_000020.11", "21":"NC_000021.9", "22":"NC_000022.11", "X":"NC_000023.11", "Y":"NC_000024.10"}}
 
+#can be useful when chromosome name is written out
 w2n = {'zero':'0', 'one':'1', 'two':'2', 'three':'3', 'four':'4', 'five':'5', 'six':'6', 'seven':'7', 'eight':'8', 'nine':'9', "ten":'10', "eleven":'11', "twelve":'12', 'thirteen':'13', 'fourteen':'14', 'fifteen':'15', 'sixteen':'16', 'seventeen':'17', 'eighteen':'18', 'nineteen':'19', 'twenty':'20', 'twenty-one':'21', 'twenty-two':'22'}
 
+#Input: dictionary of sequences (usually as output from BLAST)
+#Output: dictionary of sequences where sequences with same accession ID will be merged
 #if sequences names are given as NM_######:###-###, will merge separated subsequences for alignment
 def merge_seqs(seqs):
 	seqs = {k.split()[0]:v for k,v in seqs.items()}
@@ -26,6 +30,8 @@ def merge_seqs(seqs):
 	seqs = {k:"".join([kv[1] for kv in v]) for k,v in seqs.items()}
 	return(seqs)
 
+#Input: RefSeq Accession ID
+#Output: transcript and ORF sequences for input ID
 #return the NM sequences (transcript and ORF) for a given accession
 def nm_seqs(nm_acc, email=Entrez.email):
 	Entrez.email=email
@@ -41,11 +47,15 @@ def nm_seqs(nm_acc, email=Entrez.email):
 		cds = [1, len(seq)]
 	return((seq, seq[int(cds[0])-1:int(cds[1])]))
 
+#Input: list of RefSeq accession IDs
+#Output: the value from the input with the lowest number (before the decimal), and the highest version (after the decimal)
 def accid_opt(accids):
 	minval = min(accids, key=lambda kv: int(kv.split("_")[-1].split(".")[0])) #smallest number
 	optval = max([kv for kv in accids if int(kv.split("_")[-1].split(".")[0]) == int(minval.split("_")[-1].split(".")[0])], key=lambda kv: int(kv.split(".")[-1])) #largest version
 	return(optval)
 
+#Input: Gene name RefSeq transcript accession ID
+#Output: List of CCDS accession identifers that match inputs
 #query ccds for a given gene name and NM accession
 def query_ccds(gene, nm, species = "homo sapiens"):
 	r = tools.retry_request(requests.get, ["https://www.ncbi.nlm.nih.gov/projects/CCDS/CcdsBrowse.cgi?REQUEST=ALLFIELDS&DATA=" + gene + "&ORGANISM=0&BUILDS=CURRENTBUILDS"], {})
@@ -54,6 +64,7 @@ def query_ccds(gene, nm, species = "homo sapiens"):
 	accs = {frozenset(re.findall("DATA\=(\d+)\&BUILDS\=CURRENTBUILDS", row)):row for row in rows}
 	accs = {list(acc)[i]:accs[acc] for acc in accs for i in range(len(acc))}
 
+	#Looks up each accession
 	for acc in list(accs):
 		try:
 			r = tools.retry_request(requests.get, ["https://www.ncbi.nlm.nih.gov/projects/CCDS/CcdsBrowse.cgi?REQUEST=GV&DATA=" + str(acc) + "&BUILDS=CURRENTBUILDS"], {})
@@ -64,6 +75,8 @@ def query_ccds(gene, nm, species = "homo sapiens"):
 			print(e)
 	return(accs)
 
+#Input: CCDS accession ID
+#Output: exon locations, accession of RefSeq genomic sequence, location in genome, exon sequences
 #parse the coding sequence and genomic sequence for a given CCDS
 def parse_ccds(acc):
 	r = tools.retry_request(requests.get, ['https://www.ncbi.nlm.nih.gov/CCDS/CcdsBrowse.cgi?REQUEST=GV&DATA=' + acc + "&BUILDS=CURRENTBUILDS"], {})
@@ -111,6 +124,8 @@ def parse_ccds(acc):
 	genomic_location = [int(x) for x in re.findall("\d+", genomic_location[0])]
 	return(exons, nc, strand, genomic_location, exonseqs)
 
+#Input: full sequence, and subsequence
+#Output: returns best matching location of sequences in full sequences (allowing for some error)
 def closest_match(fullseq, subseq):
 	init_time = time.time()
 	for i in range(len(subseq), 0, -1):
@@ -124,6 +139,8 @@ def closest_match(fullseq, subseq):
 			matches = {match:tools.levenshtein(subseq, fullseq[match[0]:match[1]]) for match in matches.keys()}
 			return(matches)
 
+#Input: full sequence, and subsequences
+#Output: returns best matching location of sequences in full sequences (allowing for some error)
 def mult_seq_search(fullseq, seqs, i=200):
 	i = min([i] + [len(seq) for seq in seqs.values()])
 	matches = {}
@@ -137,6 +154,8 @@ def mult_seq_search(fullseq, seqs, i=200):
 	matches = {k:v[0] for k,v in matches.items()}
 	return(matches)
 
+#Input: full sequence, and subsequences
+#Output: returns best matching location of sequences in full sequences (allowing for some error)
 def mult_seq_search_2(fullseq, seqs, i=200):
 	matches = {}
 	init_time = time.time()
@@ -152,6 +171,9 @@ def mult_seq_search_2(fullseq, seqs, i=200):
 		tools.update_time(i-j, i-10, init_time)
 	return(matches)
 
+#Input: gene name RefSeq accession ID
+#Output: the ORF, transcript, and genomic sequence for a given RefSeq accession
+#also identifies exon locations, splices the genomic sequence and compares against the transcript/ORF
 def get_all_seqs(gene, nm, ccds="", outdir="/media/home/workspace/DB/test/", write=False, testlen=200, acceptable=0.005):
 	data = {}
 	seqs = nm_seqs(nm)
@@ -216,6 +238,9 @@ def get_all_seqs(gene, nm, ccds="", outdir="/media/home/workspace/DB/test/", wri
 	print(" " * 80, end="\r")
 	return(data)
 
+#Input: dictionary of exon locations, dictionary of sequences
+#Output: dictionary of sequences manually aligned based on exon locations, error for each sequence
+#splices genomic sequence using exon locations and compares against ORF and transcript to compute an error metric
 def parse_range(exons, seqs, ram_disk="/media/temp/", space="-", index=1):
 
 	if not all([k in exons.keys() for k in ["ORF", "transcript"]]):
@@ -254,6 +279,8 @@ def parse_range(exons, seqs, ram_disk="/media/temp/", space="-", index=1):
 		
 	return(compiled_seqs, errors)
 
+#Input: dictionary of sequences, name of focus sequence
+#Output: dictionary of percent of positions different from focus sequence for each sequence
 def compare_seqs(seqs, focus=None, space="-"):
 	if focus == None or len(focus) < 1:
 		focus = list(seqs.keys())[0]
@@ -266,20 +293,25 @@ def compare_seqs(seqs, focus=None, space="-"):
 			errors[str(k)] = 1.0
 	return(errors)
 
-#returns a refseq/genbank accession without the version
+#Input: a RefSeq/Genbank accession
+#Output accession without the version
 def acc_wo_version(acc):
 	return(".".join(acc.split(".")[:-1]))
 
-#determines if an accession is contained in a list of accessions, ignoring version number
+#Input: a RefSeq/Genbank accession, a list of accessions
+#Output: is accession contained in list, if version numbers are ignored
 def compare_acc_list(acc, l):
 	return(acc_wo_version(acc) in [acc_wo_version(x) for x in l])
 
+#Input: a RefSeq/Genbank accession, a list of accessions
+#Output:  largest version RefSeq accession from the list matching the input accession
 def find_acc_match(acc, l):
 	l = [li for li in l if acc_wo_version(li) == acc_wo_version(acc)]
 	l = sorted(l, reverse=True, key=lambda k: int(k.split(".")[-1]))
 	return(l[0])
 
-#find the chromosome and location of a gene (using standard gene symbol)
+#Input: gene name, assembly to use
+#Output: chromosome and region containing gene
 def get_genome_loc(genename, assembly="GRCh37", organism="homo sapiens"):
 	r = tools.retry_request(requests.get, ["https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=gene&term="+genename+"[gene]+AND+"+re.sub("\s+", "+", organism, flags=re.MULTILINE)+"[organism]"])
 	ids = re.findall("<Id>(\d+)</Id>", r.text)
@@ -306,7 +338,8 @@ def get_genome_loc(genename, assembly="GRCh37", organism="homo sapiens"):
 			print(traceback.format_exc())
 			print(e)
 	return(None)
-
+#Input: gene name
+#Output: dictionary of genomic and transcript (mRNA)  RefSeq accession IDs corresponding to gene
 #get all accession ids for a gene name (transcript, genomic, etc)
 def get_accids(genename, organism="homo sapiens"):
 	r = tools.retry_request(requests.get, ["https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=gene&term="+genename+"[gene]+AND+"+re.sub("\s+", "+", organism, flags=re.MULTILINE)+"[organism]"])
@@ -335,11 +368,13 @@ def get_accids(genename, organism="homo sapiens"):
 	except Exception as e:
 		print(e)
 
+#Input: gene name, list of possible genomic accession IDs, list of possible mRNA/protein accession IDs, organism
+#Output: sequencess for gene (ORF, transcript, genomic/pre-mRNA), exon locations in genomic sequence, as well as transcript and protein accessions used
 #get the sequences corresponding to a gene, given the genomic and transcript accession ids
 def get_seqs_and_exons(genename, genomic, mRNA, organism="homo sapiens", index=1):
 	transcripts = {}
 	mRNAs = {}
-	for genid in genomic:
+	for genid in genomic: #query each possible genomic accession ID
 		try:
 			handle = tools.retry_func(Entrez.efetch, [], {"db":"nucleotide", "id":genid, "retmode":"xml"})
 			genomic_record = str(handle.read().decode("utf-8"))
@@ -365,7 +400,7 @@ def get_seqs_and_exons(genename, genomic, mRNA, organism="homo sapiens", index=1
 			transcripts[mRNA[i][0]] = None
 			mRNAs[mRNA[i][1]] = None
 		genomic_seq = None
-	for (mRNA_acc, protein_acc) in mRNA:
+	for (mRNA_acc, protein_acc) in mRNA: #query each possible mRNA and protein accession
 		if compare_acc_list(mRNA_acc,transcripts) and compare_acc_list(protein_acc,mRNAs):
 			try:
 				time.sleep(1)
@@ -386,17 +421,8 @@ def get_seqs_and_exons(genename, genomic, mRNA, organism="homo sapiens", index=1
 				print(e)
 				traceback.print_exc()
 
-def get_bounds(genomic):
-	try:
-		handle = tools.retry_func(Entrez.efetch, [], {"db":"nucleotide", "id":genid, "retmode":"xml"})
-		genomic_record = str(handle.read().decode("utf-8"))
-		start = re.findall("\<GBInterval\_from\>(\d+)\<\/GBInterval\_from\>", genomic_record)[0]
-		end = re.findall("\<GBInterval\_to\>(\d+)\<\/GBInterval\_to\>", genomic_record)[0]
-		return((int(start), end))
-	except Exception as e:
-		return(None)
-
-#find the genomic coordinates of a transcript coordinate mutation
+#Input: the RefSeq access ID, and the string indicating the genetic variant
+#Output: the genomic coordinates of a transcript coordinate mutation
 def cds_to_genomic(accid, ntvar, assembly="GRCh37"):
 	version = int(accid.split(".")[-1])
 	accid_wo_version = ".".join(accid.split(".")[:-1])
@@ -415,6 +441,9 @@ def cds_to_genomic(accid, ntvar, assembly="GRCh37"):
 		return(genvar[0])
 	else:
 		return(None)
+
+#Input: the RefSeq accession ID of chromosome
+#Output: the corresponding chromosome name for the identifier
 def rev_chromosome_map(nc, assembly="GRCh37"):
 	k = [k for k,v in chromosome_map[assembly].items() if v==nc]
 	if len(k) > 0:
@@ -428,6 +457,8 @@ def rev_chromosome_map(nc, assembly="GRCh37"):
 	else:
 		return(None)
 
+#Input: a list of variants
+#Output: a dictionary of position:minor allele frequency
 #assumes variant is a single nucleotide substitution
 def find_freqs(ids, gene=""):
 	data = {}
@@ -460,6 +491,7 @@ def find_freqs(ids, gene=""):
 		tools.update_time(i, len(ids), init_time)
 	return(data)
 
+#queries a list of dbSNP IDs to find the position in the corresponding position of the transcript at refid
 def convert_rsid_to_pos(ids, refid):
 	data = {}
 	refid = refid.replace("_", "\_").replace(".", "\.")
@@ -478,18 +510,7 @@ def convert_rsid_to_pos(ids, refid):
 			time.sleep(2)
 	return(data)
 	
-def cross_ref(df1, df2, refid="NM_024006.6"):
-	data = {}
-	for i, row in df1.iterrows():
-		ids = tools.get_mutalyzer(refid, i[:-1] + ">" + i[-1], "c.")
-		for i in ids:
-			refid = i.split(":")[0]
-			pos = int(max(re.findall("\d+", i.split(":")[-1]), key=len))
-			if refid == "NC_000016.9":
-				print(df2.loc[df2["POS"] == pos].T.to_dict())
-				data.update(df2.loc[df2["POS"] == pos].T.to_dict())
-	return(data)
-	
+#Uses Ensembl variant recoder to convert a variant position to genomic position
 def transcript_to_assembly(var, assembly="GRCh37"):
 	server = "https://rest.ensembl.org"
 	ext = "/variant_recoder/human/" + var
@@ -522,6 +543,7 @@ def transcript_to_assembly(var, assembly="GRCh37"):
 							print(e)
 							traceback.print_exc()
 	return((None, None, None, None))
+
 
 def convert_assembly(var, assembly="GRCh38"):
 	server = "https://rest.ensembl.org"
@@ -659,6 +681,9 @@ def get_genes(d):
 			traceback.print_exc()
 	return(d)
 
+#Input: locaiton of the GWAS file, list of genes to use, a possible prefix for the outputs, columns to use
+#Output: GWAS data, but only within the regions of the provided genes. Includes other data, including splicing, dbSNP, and ClinVar information for any variants identified
+#Important: If translation is set, you will have to copy the file of variant accessions(prefix + "_nc_acc.txt") to Mutalyzer Batch, and copy the output to the same directory as prefix + ".trans"
 def gwas_pipeline(dffile, genelist, prefix=None, index_col="SNP", p_col="all_inv_var_meta_p", chromosome="#CHR", position="POS", ref="REF", alt="ALT", plim=0.05, translation=None, assembly="GRCh37", check=False):
 	nm_ids = []
 	for gene in genelist:
@@ -742,6 +767,8 @@ def gwas_pipeline(dffile, genelist, prefix=None, index_col="SNP", p_col="all_inv
 	pd.DataFrame(newdf).T.to_csv(prefix + "_genes.tsv", sep="\t")
 	return(newdf)
 
+#Input: a dictionary of genomic:transcript coordinated variant identifiers
+#Output: Flanking region in the genomic sequence around the position, and a check of whether the reference alleles match
 def get_subseq(trans):
 	trans = {k:v for k,v in trans.items() if v != None and (isinstance(v, (list, tuple,)) or isinstance(v, str))}
 	for k,v in trans.items():
@@ -844,6 +871,8 @@ def get_subseq(trans):
 				print(str(nm_var) + "\t" + str(e))
 	return(muts)
 
+#Queries Google Scholar for given text
+#Usually used for different types of variant accession IDs
 def query_gscholar(var):
 	i = 0
 	html = []
@@ -864,6 +893,8 @@ def query_gscholar(var):
 			break
 	return(html)
 
+#Queries the variant in dbSNP, Clinvar, and Google Scholar
+#Parses out any minor allele frequency and clinical significance from dbSNP and ClinVar
 def get_all_variant_info(ncvar):
 	data = query_clinvar(ncvar)
 	testlist = [ncvar]
@@ -896,6 +927,7 @@ def get_all_variant_info(ncvar):
 	data["NM_acc"] = [max(re.findall("NM\_\d+\.?\d*.*?\:c\.[\-|\+|\*]?\d*[\-|\+|\*]?\d+[A-Z]+\>[A-Z]+", nmacc), key=len) for nmacc in data["NM_acc"]]
 	return(data)
 
+#Queries Clinvar for a given genetic variant, but requires the genomic coordinated HGVS
 def query_clinvar(ncvar):
 	data = {}
 	r = tools.retry_func(Entrez.esearch, [], {'db':'clinvar', 'term':ncvar}).read()
@@ -920,8 +952,10 @@ def query_clinvar(ncvar):
 			data["NM_acc"] = nm_id
 	return(data)
 
+#Queries dbSNP for a variant
+#Can use dbSNP identifers (RSID) or genomic location HGVS
 def query_dbSNP(rsid, altonly=True, refineorder=['gnomAD - Genomes', '1000Genomes', 'HapMap', 'gnomAD - Exomes'], verbose=False):
-	if not (tools.is_numeric(rsid) or (isinstance(rsid, str) and rsid.startswith("rs"))):
+	if not (tools.is_numeric(rsid) or (isinstance(rsid, str) and rsid.startswith("rs"))): #search for dbSNP accessions
 		if "nc" in rsid.lower():
 			try:
 				assembly = [k for k in chromosome_map.keys() if rsid.split(":")[0] in chromosome_map[k].values()][0]
@@ -936,6 +970,7 @@ def query_dbSNP(rsid, altonly=True, refineorder=['gnomAD - Genomes', '1000Genome
 			except Exception as e:
 				return({})
 	rsid = rsid.replace("rs", "")
+	#Look up the dbSNP accession
 	r = tools.retry_request(requests.get, ["https://www.ncbi.nlm.nih.gov/snp/rs" + str(rsid)], {})
 	nm = re.findall("NM\_\d+\.?\d*.*?\:c\.[\-|\+|\*]?\d*[\-|\+|\*]?\d+[A-Z]+\&gt\;[A-Z]+", r.text) + re.findall("NM\_\d+\.?\d*.*?\:c\.[\-|\+|\*]?\d*[\-|\+|\*]?\d+[A-Z]+\>[A-Z]+", r.text)
 	nm = list(set([nmi.replace("&gt;", ">") for nmi in nm]))
@@ -943,7 +978,7 @@ def query_dbSNP(rsid, altonly=True, refineorder=['gnomAD - Genomes', '1000Genome
 	freqs = parsed_html.body.find_all("tr", attrs={"class":"chi_row"}) + parsed_html.body.find_all("tr", attrs={"class":"par_row"})
 	freqd = {}
 	alt = ""
-	for i, freq in enumerate(freqs):
+	for i, freq in enumerate(freqs): #Get the minor allele frequencies
 		names = tuple(re.findall("\<a.+\>(.+?)\<\/a\>", str(freq)))
 		alleles = re.findall("\<td\>([A-Za-z]+\=\d?\.?\d*)\<\/td\>", str(freq))
 		alleles = {max(re.findall("[A-Za-z]+", allele), key=len):tools.get_num(allele) for allele in alleles}
@@ -980,11 +1015,14 @@ def query_dbSNP(rsid, altonly=True, refineorder=['gnomAD - Genomes', '1000Genome
 					clinsig.append((cols[2], cols[3]))
 	return(freqd, clinsig, nm, rsid)
 
+#Input: wild-type and mutant sequences location of variant
+#Output: comparison of splicing scores for different tools and webservers
+#Runs ESEfinder, FAS_ESS, and ExonScan for WT and mutant strings to compare
 def compare_splicing(wtstr, mutstr, loc=None, genename="pholder", directory="./sources/", normalize = False):
 	if not os.path.isdir(directory):
 		os.mkdir(directory)
 	data = {}
-	if loc == None:
+	if loc == None: #assume location to analyze is middle of string
 		loc = len(wtstr)//2
 		if not len(wtstr) % 2 == 1:
 			warnings.warn("Location not given")
@@ -993,7 +1031,7 @@ def compare_splicing(wtstr, mutstr, loc=None, genename="pholder", directory="./s
 	data["esefinder"] = any([wt_esefinder[i] != mut_esefinder[i] for i in range(len(wt_esefinder))])
 	data["fas_ess"] = compute_features.fas_ess(wtstr) == compute_features.fas_ess(mutstr)
 	data["exonscan"] = compute_features.get_exonscan(wtstr) == compute_features.get_exonscan(mutstr)
-	for f in ["ESR.tsv", "Z_EI.tsv", "Z_WS.tsv"]:
+	for f in ["ESR.tsv", "Z_EI.tsv", "Z_WS.tsv"]: #compute hexamer splicing scores
 		df = pd.read_csv(os.path.join(directory, f), sep="\t", index_col=0, header=None).T.to_dict()
 		df = {k:v[1] for k,v in df.items()}
 		if normalize:
@@ -1010,12 +1048,15 @@ def compare_splicing(wtstr, mutstr, loc=None, genename="pholder", directory="./s
 		data[f.split(".")[0]] = mutscore - wtscore
 	return(data)
 
+#Input: multiple sequence alignment, name of focus sequence, positions to examine (uses entire focus sequence by default)
+#Output: Loglikelihood of each sequence in alignment (measures how close to "median" each sequence is), and fraction of positions matching focus sequence
+#Given an alignment and a focus sequence, computes the distribution of amino acids (or nucleotides) at any position in the focus sequence
 def seq_loglikelihood(alignment, focus=None, positions=None, space="-", verbose=False):
 	if focus == None or focus not in alignment:
 		focus = list(alignment.keys())[0]
 	if positions == None:
 		positions = np.arange(0, len(alignment[focus].replace(space, "")))
-	dist = score_variants.compute_distribution(alignment, focus)
+	dist = score_variants.compute_distribution(alignment, focus) #computes distribution of amino acids at each position from multiple sequence alignment
 	converted_pos = []
 	for pos in positions:
 		i = compute_features.convert_position2(alignment[focus], pos)
@@ -1047,6 +1088,8 @@ def seq_loglikelihood(alignment, focus=None, positions=None, space="-", verbose=
 	loglikelihood = {k:v-normal for k,v in loglikelihood.items()}
 	return(loglikelihood, matching)
 
+#Unfinished
+'''
 def parse_miRDB_info(f, regex="\d.NC\_\d+\.\d+.g\.\d+[ACGT].[ACGT]", maxval = 100):
 	data = {}
 	wb = xlrd.open_workbook(f)
@@ -1079,8 +1122,6 @@ def parse_miRDB_info(f, regex="\d.NC\_\d+\.\d+.g\.\d+[ACGT].[ACGT]", maxval = 10
 						pass
 			if loc["WT"] == None or loc["MUT"] == None:
 				print(sheetname + "\t" + "MUT and WT row not found: " + str(sheetname) + "\t" + str(loc))
-			#elif loc["WT"][0] != loc["MUT"][0]:
-			#	print(sheetname + "\t" + "MUT and WT rows not same: " + str(loc))
 			else:
 				for k in range(loc["MUT"][0], loc["MUT"][0] + maxval):
 					for key in loc.keys():
@@ -1095,7 +1136,10 @@ def parse_miRDB_info(f, regex="\d.NC\_\d+\.\d+.g\.\d+[ACGT].[ACGT]", maxval = 10
 					if data[sheetname][key]  == {}:
 						print(f + "\t" + sheetname + "\t" + key + "\t" + str(loc[key]))
 	return(data)
-
+'''
+#Input: a variant in HGVS format, a sequence that the variant comes from
+#Output: a classification of the variant in terms of effect and location
+#Classifies a variant based on HGVS description
 def classify_var(var, seq):
 	nts = re.findall("[A-Za-z]+", var)
 	if var.startswith("-"):
@@ -1114,7 +1158,7 @@ def classify_var(var, seq):
 		return("inversion")
 	elif ("-" in var or "+" in var) and len(re.findall("\d+", var)) >= 2:
 		return("intronic")
-	elif len(nts) >= 2 and len(re.findall("\d+", var)) == 1:
+	elif len(nts) >= 2 and len(re.findall("\d+", var)) == 1: #variant is a coding-sequence substitution
 		pos = int(max(re.findall("\d+", var)))
 		if len(nts[0]) > len(nts[1]):
 			return("deletion")

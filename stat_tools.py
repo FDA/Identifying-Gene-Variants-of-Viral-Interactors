@@ -13,25 +13,29 @@ from statsmodels.stats.multitest import multipletests
 import statistics
 import math
 
+#Input a dictionary of key:count
+#Output: 
 def cdf(d):
 	d = sorted(d.items(), key=lambda kv: kv[1])
 	d = {d[i][0]:i/len(d) for i in range(len(d))}
 	return(d)
 
-
+#Input: a dictionary of (k1, k2):value, which usually scores pairs
+#Output: a 2D array of scores corresponding to the sorted set of values
 def convert_to_m(d,sym=True):
 	l1 = sorted(set([k[0] for k in d.keys()]))
 	l2 = sorted(set([k[1] for k in d.keys()]))
 	init_time = time.time()
 	m = [[np.nan for j in range(min(l2), max(l2)+1)] for i in range(min(l1), max(l1)+1)]
-	for i, k1 in enumerate(l1):
-		for j, k2 in enumerate(l2):
+	for i, k1 in enumerate(l1): #Examine each pair
+		for j, k2 in enumerate(l2): 
 			if (k1, k2) in d.keys():
 				m[i][j] = d[(k1, k2)]
-			elif sym and (k2, k1) in d.keys():
+			elif sym and (k2, k1) in d.keys(): #scores are assumed to be symmetric
 				m[i][j] = d[(k2, k1)]
 		tools.update_time(i, len(l1), init_time)
 	return(m)
+
 
 def compare_dicts(d1, d2):
 	alphabet = {}
@@ -57,20 +61,21 @@ def compare_dicts(d1, d2):
 	wc = wilcoxon([d1[k] for k in d1], [d2[k] for k in d1])
 	print("Wilcoxon p-value: " + str(round(wc.pvalue, 5)))
 
-#computes entropy of an array
-def shannon_entropy(arr):
-	tot = sum(arr)
-	new_arr = [arr[i]/tot for i in range(len(arr))]
-	return(sum([-new_arr[i]*math.log(new_arr[i]) for i in range(len(new_arr)) if new_arr[i] > 0.0]))
 
+#Input: a 2D array
+#Output the transpose of the input
 def trans_mat(mat):
 	return([[mat[i][j] for i in range(len(mat))] for j in range(len(mat[0]))])
 
+#Input: a dictionary of key:count
+#Output: a dictionary of key:frequency values
 def convert_to_freqs(d):
 	tot = sum(d.values())
 	d = copy.deepcopy({k:v/tot for k,v in d.items()})
 	return(d)
 
+#Input: a target dictionary representing distributions of values, an actual dictionary representing distributions of values
+#Output: 
 #creates a sampling tree whose distribution is based on the difference target - actual
 #designed to move toward the target distribution
 def weighted_tree(d_target, d_actual, limit=0.001):
@@ -109,6 +114,8 @@ def get_numeric(x,y=None):
 	else:
 		return(newx, newy)
 
+#Input: a dictionary of k:count values
+#Output: a range_tree, allowing for efficient sampling of keys proportionally to their counts
 #generate a range tree from a dictionary of counts or probabilities to be used for sampling
 def range_tree(d):
 	tot = sum(d.values())
@@ -124,11 +131,16 @@ def range_tree(d):
 			pass
 	return(tree)
 
+#Input: a range tree from above
+#Output: a value sampled from the range tree
 #sample from a range tree
 def sample_from_tree(t):
 	val = random.uniform(0,1)
 	return(t[val].pop()[2]) #return the element having val in its interval
 
+#Input: a data frame, a binary column xcol, and a numerical column ycol
+#Output: output of Mann-Whitney results of y-values, with rows split on the x-values
+#In other words, we separate the rows based on the x-values, and compare the y-values of the two groups with a Mann-Whitney test
 def run_mwu(df, xcol, ycol, rounding="UP"):
 	x = list(df[xcol])
 	y = list(df[ycol])
@@ -144,6 +156,8 @@ def run_mwu(df, xcol, ycol, rounding="UP"):
 	y1 = [y[i] for i in range(len(x)) if x[i] == z1]
 	return(scipy.stats.mannwhitneyu(y0, y1))
 	
+#Input: a dataframe, list of columns to include
+#Output: the percent reduction in the explained variance of the PCA model when including only the give columns
 #calculate difference in explained variance with and without columns
 def calc_explanatory_df(df, columns=[]):
 	pca = PCA(n_components=1, random_state=0)
@@ -154,7 +168,9 @@ def calc_explanatory_df(df, columns=[]):
 	df2 = df[df.columns.difference(columns)]
 	partmodel = pca.fit(df).explained_variance_[0]
 	return((fullmodel - partmodel)/fullmodel)
-			
+
+#Input: A matrix X and a list Y, a regression model to use
+#Output: the change in the explanatory value of each column of X			
 #calculates the reduction in the MSE due to each feature
 def calc_explanatory(x, y, regr, n=10, direction="down"):
 	F = []
@@ -192,12 +208,16 @@ def calc_explanatory(x, y, regr, n=10, direction="down"):
 		F[j] = np.mean(F[j])
 	return(F)
 
+#Input: two lists
+#Ouput: mean square error of the two lists
 def calc_mse(arr1, arr2):
 	if len(arr1) != len(arr2):
 		raise Exception("Arrays have different lengths.")
 	err = sum([(arr1[i]-arr2[i])**2 for i in range(len(arr1))])/len(arr1)
 	return(err)
 
+#Input: a regression model, a matrix X, and a list y
+#Output: computes accuracy of regression model across n random training-testing splits
 #computes n boostrap cross-validation
 def cross_validate(regr, x, y, mode="regr", n=100):
 	accuracies = []
@@ -217,6 +237,8 @@ def cross_validate(regr, x, y, mode="regr", n=100):
 		print("Accuracy: " + str(round(accuracy, 3)) + ", " + str(round(100.0*(i+1)/n, 2)) + "% done. Estimated time remaining: " + str(int(estimated_time/60)) + " minutes, " + str(int(estimated_time % 60)) + " seconds.", end="\r", flush=True)
 	return(accuracies)
 
+#Input: a matrix X, a list Y, paired
+#Output: random subsets of X and Y
 #generates a bootstrap sample
 def bootstrap(x, y, weights=[], size=0.2):
 	if weights == None or len(weights) < 1:
@@ -230,6 +252,8 @@ def bootstrap(x, y, weights=[], size=0.2):
 	sample_weights = [weights[i] for i in indices]
 	return(sample_x, sample_y, sample_weights)
 
+#Input: two complex dictionaries of similar dimension
+#Output: compares each column of reference and sample datasets
 def compare_datasets(datadict, dataref):
 	for mode in datadict:
 		pairs = {}
@@ -248,6 +272,8 @@ def compare_datasets(datadict, dataref):
 			print(mw.pvalue, end=" \t")
 			print(wc.pvalue)
 
+#Input: a list of angles measured in degrees in [-180, 180] range
+#Output: a list of angles in the [0, 360] range
 #assumes angles are measured in degrees and set between -180 and 180
 def convert_angle(l):
 	if any([True for i in range(len(l)) if l[i] < -180 or l[i] < 180]): #not angles
@@ -257,6 +283,7 @@ def convert_angle(l):
 			if abs(l[i]) > abs(l[i] - -180): #closer to -180 than zero
 				l[i] += 360
 		return(l)
+
 
 def compare_lists(l1, l2, forbidden=["", None, np.nan], numeric=True):
 	if numeric and (infer_numeric(l1) and infer_numeric(l2)): #both lists are (mostly) numeric
@@ -283,6 +310,8 @@ def compare_lists(l1, l2, forbidden=["", None, np.nan], numeric=True):
 		maxnum = max([i for i in range(len(m1))], key=lambda j: abs(m1[j] - scale*m2[j]))
 		return(chisq, {categories[i]:m1[i] for i in range(len(m1))}, {categories[i]:m2[i] for i in range(len(m2))}, categories[maxnum], m1[maxnum]/sum(m1) - m2[maxnum]/sum(m2))
 
+#Input: complex dictionary of k:{k2:count}
+#Output: histogram of each dictionary in input
 def hist_lists(data):
 	l = {k:[] for k in data.keys()}
 	for k,c in data.items():
@@ -295,11 +324,15 @@ def hist_lists(data):
 	plt.legend()
 	plt.show()
 
+#Input: two lists of equal length
+#Output: includes only positions that are numeric and not NaN in both lists
 def process_lists_numerical(l1, l2):
 	newl1 = [float(l1[i]) for i in range(len(l1)) if is_numeric(l1[i]) and is_numeric(l2[i]) and not np.isnan(float(l1[i])) and not np.isnan(float(l2[i]))]
 	newl2 = [float(l2[i]) for i in range(len(l1)) if is_numeric(l1[i]) and is_numeric(l2[i]) and not np.isnan(float(l1[i])) and not np.isnan(float(l2[i]))]
 	return(newl1, newl2)
 
+#Input: Two lists of equal size
+#Output: comparison of numerical values in lists with sign-test, wilcoxon signed-rank, and percent differences
 #compare values of x and y columns
 def compare_columns(x,y):
 	x = list(x)
@@ -312,8 +345,8 @@ def compare_columns(x,y):
 	print("Sign test " + str(st))
 	print(str(wc))
 	print(str(statistics.mean(pct_dif)) + "\t" + str(statistics.stdev(pct_dif)))
-
-#splits x and y arrays into random training/testing split, assuming x and y have same length
+#Input: two lists of equal length
+#OUtput: splits x and y arrays into random training/testing split, assuming x and y have same length
 def random_split(x, y, weights=[], testsize=0.2):
 	if weights == None or len(weights) < 1:
 		weights = [1 for i in range(len(y))]

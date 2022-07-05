@@ -6,16 +6,22 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import sklearn.cluster
 
+#Input: DNA sequence
+#Output: complement sequence
 def complement(seq):
 	d = {"C":"G", "G":"C", "A":"T", "T":"A"}
 	if all([True if seq[i] in d.keys() else False for i in range(len(seq))]):
 		return("".join([d[seq[i]] for i in range(len(seq))]))
 
+#Input: a list of values, a key
+#Output: percentile rank of key relative to list l
 def pctile(l, k):
 	l = [float(li) for li in list(l) if is_numeric(li) and not np.isnan(float(li))]
 	if len(l) >= 0 and is_numeric(k) and not np.isnan(float(k)):
 		return(len([li for li in l if li <= float(k)])/len(l))
 
+#Input: string representing HTML/XML formatted site
+#Output: possible elements matching the given key ("tr" by default)
 #finds an HTML/XML element when regex doesn't work
 def get_element(s, k="tr"):#find HTML tagged areas (regex doesn't work)
 	elements = []
@@ -30,6 +36,8 @@ def get_element(s, k="tr"):#find HTML tagged areas (regex doesn't work)
 		s = s[end+len(k)+2:]
 	return([x for x in elements if len(x) > 0])
 
+#Input: a complex dictionary structure d, a key k
+#Output: any value matching the key k in d
 def seek_in_struct(d, k):
 	return_d = {}
 	if isinstance(d, dict):
@@ -45,7 +53,8 @@ def seek_in_struct(d, k):
 	return(return_d)
 
 
-#computes levenshtein distance between strings
+#Input: strings s1, s2
+#Output: the Levenshtein distance between s1 and s2 (edit distance)
 def levenshtein(s1, s2):
     if len(s1) > len(s2):
         s1, s2 = s2, s1
@@ -60,6 +69,8 @@ def levenshtein(s1, s2):
         distances = distances_
     return distances[-1]
 
+#Input: dictionary of k:count or frequency values, number of samples to return
+#Output: a sample of keys from dictionary, sampled proportionally to their values
 def custom_sample(d, k=None):
 	for k2, v2 in d.items():
 		if np.isnan(v2):
@@ -72,7 +83,8 @@ def custom_sample(d, k=None):
 	except Exception as e:
 		return(None)
 
-#retry a given function (useful for networking functions)
+#Input: a function, any positional and keyword arguments of function
+#Output: outcome of function with arguments, retried multiple times if issues are reached
 def retry_func(func, positional_arguments=[], keyword_arguments={}, lim=10, wait=2):
 	for i in range(lim):
 		try:
@@ -82,11 +94,13 @@ def retry_func(func, positional_arguments=[], keyword_arguments={}, lim=10, wait
 	warnings.warn("\033[93m" + str(func.__name__) + " failed after " + str(lim) + " tries." + "\033[0m") 
 	return(None)
 
-#find the subsequence centered on pos with the l flanking characters (l/2 on each side)
+#Input: sequence, position in sequence, and length of desired subsequence
+#Output: subsequence of length l, centered on position pos (l/2 characters on either side of position)
 def subseq(seq, pos, l):
 	return(seq[max(0, pos - math.floor(l/2)):min(len(seq), pos + math.ceil(l/2))])
 
-#computes a sequence uniqueness score
+#Input: multiple sequence alignment, and name of a focus gene
+#Output: uniqueness measure of sequences
 def seq_unique(seqs, genename=None, space="-"):
 	if genename == None:
 		genename = list(seqs.keys())[-1]
@@ -126,7 +140,9 @@ def seq_unique(seqs, genename=None, space="-"):
 	identmat = [[identmat[i][j] for i in range(len(names)) if names[i] not in toremove] for j in range(len(names)) if names[j] not in toremove]
 	return(uniqueness, seqs_wo_dups, identmat)
 
-#computes similarity between sequences using a custom function (usually levenshtein, but can be changed)
+#Inputs: multiple sequence alignment, name of focus gene
+#Optional input: distance function between sequences, default is Levenshtein
+#Output: similarity between sequences
 def seqs_compute_similarity(seqs, genename=None, space="-", func=lambda k: levenshtein(k[0], k[1])):
 	if isinstance(seqs, (dict,)):
 		names = list(seqs.keys())
@@ -136,7 +152,8 @@ def seqs_compute_similarity(seqs, genename=None, space="-", func=lambda k: leven
 	similarity = -1*np.array([[func((seq1.replace(space, ""), seq2.replace(space, ""))) for seq1 in seqs] for seq2 in seqs])
 	return(similarity)
 
-#cluster sequences by by precomputed similarity matrix (uses Affinity Propagation)
+#Input: similarity matrix of sequences, multiple sequence alignment
+#Output: cluster centers when sequences are clustered by similarity using affinity propagation
 def cluster_seqs(similarity, seqs, genename=None, space="-"):
 	if isinstance(seqs, (dict,)):
 		names = list(seqs.keys())
@@ -155,6 +172,8 @@ def cluster_seqs(similarity, seqs, genename=None, space="-"):
 	newseqs[genename] = seqs[names.index(genename)]
 	return(newseqs)
 
+#Input: similarity matrix of sequences, multiple sequence alignment
+#Output: cluster centers when sequences are clustered by similarity using affinity propagation, also cluster labels:sequences in cluster dictionary
 def cluster_seqs2(seqs, genename=None, space="-", frac=False, mode="identity"):
 	if genename == None or len(genename) < 1:
 		genename = list(seqs.keys())[-1]
@@ -198,7 +217,8 @@ def cluster_seqs2(seqs, genename=None, space="-", frac=False, mode="identity"):
 	newseqs[genename] = seqs[names.index(genename)]
 	return(newseqs, clusters)
 
-#find the cluster centers with a similarity matrix
+#Input: similarity matrix, clustering from sklearn that can be fitted on matrix
+#Output: cluster centers for clustering computed from similarity matrix
 def cluster_centers(similarity, cluster, names=[]):
 	if names == None or len(names) < 1:
 		names = [i for i in range(len(similariy))]
@@ -209,6 +229,8 @@ def cluster_centers(similarity, cluster, names=[]):
 	clusters = {names[min([i for i in range(len(labels)) if labels[i] == labels[j]], key=lambda kv: distances[kv])]:[names[i] for i in range(len(labels)) if labels[i] == labels[j]] for j in range(len(labels))}
 	return(clusters)
 
+#Input: dictionary of sequences, name of focus sequences
+#Output: clustering sequences by similarity
 def cluster_seqs_n(seqs, focus=None, n=150):
 	if focus == None or len(focus) < 1 or focus not in seqs:
 		focus = list(seqs.keys())[-1]
@@ -222,7 +244,8 @@ def cluster_seqs_n(seqs, focus=None, n=150):
 	clusters = cluster_centers(identmat, kmeans, names=names)
 	return(clusters)
 	
-	
+#Input: multiple sequence alignment, name of focus gene, weighting of sequences
+#Output: weighted distribution of characters (NT, AA) at each position of focus sequence.
 def dist_with_weight(seqs, genename, weight={}, space="-", alphabet=""):
 	if set(weight.keys()) != set(seqs.keys()):
 		weight, seqs, identmat = seq_unique(seqs, genename=genename, space=space)
@@ -249,7 +272,8 @@ def dist_with_weight(seqs, genename, weight={}, space="-", alphabet=""):
 			location += 1
 	return(distribution)
 
-#converts a mutation coordinates (uses genomic from GRCh37 by default)
+#Input: RefSeq accession ID, genetic variant, identifer ("c." for coding sequence variant, "g." for genomic variant), assembly to use
+#Output: any other coordinates of variant from Mutalyzer
 def get_mutalyzer(refid, var, c="c.", assembly="GRCh37"):
 	var = get_mutation_data(var)
 	version = int(refid.split(".")[-1])
@@ -262,7 +286,8 @@ def get_mutalyzer(refid, var, c="c.", assembly="GRCh37"):
 		ids = list(set([i.replace("&gt;", ">") for i in ids]))
 	return(ids)
 
-#check a variant with mutalyzer
+#Input: Refseq accession ID, genetic variant, identifer ("c." for coding sequence variant, "g." for genomic variant)
+#Output: Returns anay errors or warnings from Mutalyzers
 def check_variant(refid, var, c="c."):
 	var = get_mutation_data(var)
 	address = "https://mutalyzer.nl/name-checker?description=" + str(refid) + "%3A" + str(c) + str(var[0]) + str(var[1][0]) + "%3E" + str(var[1][1])
@@ -271,8 +296,9 @@ def check_variant(refid, var, c="c."):
 	warnings = re.findall("(\d+) Warnings", r.text)
 	return([int(x) for x in errors], [int(x) for x in warnings])
 
-#retries a requests library function
-#assumes a response object is returned (which can be raised for HTML status)
+#Input: Requests function, positional and keyword arguments
+#Output: output of function applied on arguments
+#retries multiple times if errors are encountered
 def retry_request(func, positional_arguments=[], keyword_arguments={}, lim=10, wait=2):
 	for i in range(lim):
 		try:
@@ -284,7 +310,8 @@ def retry_request(func, positional_arguments=[], keyword_arguments={}, lim=10, w
 	warnings.warn("\033[93m" + str(func.__name__) + " failed after " + str(lim) + " tries." + "\033[0m") 
 	return(None)
 
-#infers the alphabet of a sequence/string (either NT or amino acid)
+#Input: sequence, possible alphabet, cuboff fraction
+#Output: alphabet of input (NT or amino acid)
 def infer_alphabet(seq, alphabet="", cutoff=0.95):
 	options = {"nt":["A", "C", "G", "T", "U", "-", "."], "aa":["G", "P", "A", "V", "L", "I", "M", "C", "F", "Y", "W", "H", "K", "R", "Q", "N", "E", "D", "S", "T", "*", "-", "."]}
 	combined = []
@@ -297,6 +324,9 @@ def infer_alphabet(seq, alphabet="", cutoff=0.95):
 			return(alpha)
 	return(None)
 
+#Input: a list of values
+#Output: whether or not list is mostly numeric (also excludes NaN values)
+#determines if a list is mostly numeric (useful for lists and dataframes)
 def infer_numeric(l, cutoff=0.9, forbidden=["", np.nan, np.inf, None]):
 	l = [l[i] for i in range(len(l)) if l[i] not in forbidden]
 	if np.nan in forbidden:
@@ -309,6 +339,7 @@ def infer_numeric(l, cutoff=0.9, forbidden=["", np.nan, np.inf, None]):
 	else:
 		return(True)
 
+#one-to-three letter amino acid codes
 residue_abbreviations = \
 {
     'G' : 'gly', # nonpolar
@@ -334,6 +365,7 @@ residue_abbreviations = \
 }
 residue_abbreviations_inv = {v : k for k,v in residue_abbreviations.items()}
 
+#standard genetic code reverse-translation and translation
 codon_table = {'I' : ['ATT', 'ATC', 'ATA'],
                'L' : ['CTT', 'CTC', 'CTA', 'CTG', 'TTA', 'TTG'],
                'V' : ['GTT', 'GTC', 'GTA', 'GTG'],
@@ -358,9 +390,11 @@ codon_table = {'I' : ['ATT', 'ATC', 'ATA'],
 				'-' : ['---']}
 codon_to_aa = {codon : aa for aa,v in codon_table.items() for codon in v}
 
+#list of codons
 codons = ["TTT", "TTC", "TTA", "TTG", "TCT", "TCC", "TCA", "TCG", "TAT", "TAC", "TAA", "TAG", "TGT", "TGC", "TGA", "TGG", "CTT", "CTC", "CTA", "CTG", "CCT", "CCC", "CCA", "CCG", "CAT", "CAC", "CAA", "CAG", "CGT", "CGC", "CGA", "CGG", "ATT", "ATC", "ATA", "ATG", "ACT", "ACC", "ACA", "ACG", "AAT", "AAC", "AAA", "AAG", "AGT", "AGC", "AGA", "AGG", "GTT", "GTC", "GTA", "GTG", "GCT", "GCC", "GCA", "GCG", "GAT", "GAC", "GAA", "GAG", "GGT", "GGC", "GGA", "GGG"]
 
-#get the (longest) number from a string
+#Input: string
+#Output: longest numeric substring
 def get_num(s):
 	num = float(max(re.findall("\d+\.?\d*", s), key=len))
 	if num - int(num) == 0.0:
@@ -368,28 +402,34 @@ def get_num(s):
 	else:
 		return(num)
 
+#Input: string
+#Output: web-formatted string
 #useful when sending data online which must be formatted
 def slugify(value):
 	value = str(re.sub('[^\w\s-]', '', value).strip().lower())
 	value = str(re.sub('[-\s]+', '-', value))
 	return(value)
 
-#load from pickle (binary data) file
+#Input: path to pickle file
+#Output: the memory object corresponding to the file
 def pickleload(f):
 	with open(f, "rb") as pklfile:
 		d = pickle.load(pklfile)
 	return(d)
 
-#save to pickle (binary data) file
+#Input: any memory object (variable), path to pickle file
+#Output: writes object to disk
 def pickledump(d, f):
 	with open(f, "wb") as pklfile:
 		pickle.dump(d,pklfile)
 
-#creates a mutant string
+#Input: string, character, position in string
+#Output: mutant sequence from replacing string at position pos with character c
 def update_str(s, c, pos):
 	return(s[:pos] + c + s[pos+1:])
 
-#gives updates, including estimated remaining time, when used in a for loop
+#Input: iteration count i, total number of iterations n, and initial time
+#Output: prints progress and estimated remaining time
 def update_time(i, n, init_time, func_name="", linelen=80):
 	if i+1 >= n:
 		print(" " * (70 + len(func_name)), end="\r", flush=True)
@@ -405,7 +445,8 @@ def update_time(i, n, init_time, func_name="", linelen=80):
 		s += " " * (linelen - len(s))
 		print(s, end="\r", flush=True)
 
-#also updates on time, but uses a wait bar for time
+#Input: iteration count i, total number of iterations n, and initial time
+#Output: prints progress (using a progress bar) and estimated remaining time
 def update_time_2(i, n, init_time, l=304, linelen=80):
 	eigth = {1:'\u258F', 2:'\u258E', 3:'\u258D', 4:'\u258C', 5:'\u258B', 6:'\u258A', 7:'\u2589'}
 	if i+1 >= n:
@@ -421,22 +462,29 @@ def update_time_2(i, n, init_time, l=304, linelen=80):
 		s += str(estimated // 60) + " minutes, " + str(estimated % 60) + " seconds." + (" " * 5)
 		print(s, end="\r", flush=True)
 
+#Input: two dimensional array (matrix)
+#Output: transpose matrix
 def trans_mat(mat):
 	return([[mat[i][j] for i in range(len(mat))] for j in range(len(mat[0]))])
 
+#Input: list a, list b
+#Output: list a without any elements of b
 def remove_from_list(a,b):
 	for bi in b:
 		if bi in a:
 			a.remove(bi)
 	return(a)
 
+#Input: string s, list of strings l:
+#Output: if any strings from li in s
 def check_stringmatch(s, l, case_dependent=False):
 	for li in l:
 		if li in s or (not case_dependent and li.lower() in s.lower()):
 			return(True)
 	return(False)
 
-#converts colors from HSV to RGB system. Useful when automating color choice
+#Input: hue, saturation, and value for a color
+#Output: RGB color system values
 def hsv_to_rgb(h, s, v):
 	if s == 0.0:
 		return v, v, v
@@ -459,7 +507,9 @@ def hsv_to_rgb(h, s, v):
 	if i == 5:
 		return v, p, q
 
-#used for plotting to generate rainbow colors, but alternate colors by hue
+#Input: iteration i, total number of iterations n, cycling factor r
+#Output: RGB color value
+#Designed to alternate colors to avoid having adjacent similar colors
 def gen_color(i, n, r=2, s=1.0, v=1.0):
 	n = n+1
 	h = i/(n+0.0) + (i%r)*(1.0/r)
@@ -467,7 +517,8 @@ def gen_color(i, n, r=2, s=1.0, v=1.0):
 		h = h-1
 	return(tuple(hsv_to_rgb(h, s, v)))
 
-#Converts hex strings to RGB system
+#Input: hex string
+#Output: RGB color values
 def hex_to_rgb(s):
 	if "#" in s:
 		s = s.split("#")[1:]
@@ -476,14 +527,16 @@ def hex_to_rgb(s):
 		color.append(int(s[2*i:2*i+2],16)/16**2)
 	return(color)
 
-#produces a dictionary of position:[codon, amino acid] entries for a nucleotide sequence
+#Input: nucleotide sequence
+#Output: dictionary of position:[codon, amino acid] for sequence
 def aaseq_posdict(nt_seq):
 	codons = [nt_seq[3*i:3*(i+1)] for i in range(len(nt_seq)//3)]
 	aas = [codon_to_aa[c] for c in codons if codon_to_aa[c] != 'Stop']
 	d = {i:[codons[i], aas[i]] for i in range(len(aas))}
 	return d
 
-#parses a csv file. Use pd.read_csv if possible
+#Input: path to CSV/TSV file
+#Output: matrix corresponding to CSV/TSV file
 def read_csv(inf, sep="\t"):
 	data = []
 	with open(inf, "r") as f:
@@ -492,6 +545,9 @@ def read_csv(inf, sep="\t"):
 			data.append((line.strip()).split(sep))
 	return(data)
 
+#Input: path to CSV/TSV file
+#Optional inputs: index_column, header
+#Output: matrix corresponding to CSV/TSV file
 def read_csv_2(inf, sep="\t", index_col=None, header=0):
 	data = {}
 	headers = {}
@@ -510,7 +566,8 @@ def read_csv_2(inf, sep="\t", index_col=None, header=0):
 				data[index] = {headers[i]:line.split(sep)[i] for i in range(len(headers))}
 	return(data)
 
-#creates appropriate string indicating significance and rounds to 3 digits
+#Input: number, number of significant digits, color to indicate formatting of significant values
+#Output: rounded number string, potentially colored to indicate significance
 def significance(num, digits=3, color="red"):
 	if round(num,digits) < math.pow(10, -digits):
 		returnstr = str(math.pow(10, -digits))
@@ -520,18 +577,23 @@ def significance(num, digits=3, color="red"):
 		returnstr = "\033[91m" + returnstr + "\033[00m"
 	return(returnstr)
 
-#using a dictionary of key:number/count values, converts all to frequencies
+#Input: dictionary of k:count
+#Output: dictionary of k:frequency
 def convert_to_freqs(d):
 	tot = sum(d.values())
 	l = len(list(d.keys())[0])
 	d = {k:d[k]/tot*(10**l) for k in d}
 	return(d)
 
+#Input: string
+#Output: string padded with spaces to fill a number of characters
 def padstring(s, n=10, space=" "):
 	if len(s) < n:
 		return(s+(space*(n-len(s))))
 	return(s)
 
+#Input: path to file, two-dimensional matrix, labels of rows and columns
+#Output writes a CSV/TSV file
 def write_to_csv(filename, data, labelsX=[], labelsY = []):
 
 	if labelsX == None or len(labelsX) < 1:
@@ -554,7 +616,8 @@ def write_to_csv(filename, data, labelsX=[], labelsY = []):
 				outf.write("\t")
 			outf.write("\n") 
 
-#reads a two column csv into a data dictionary
+#Input: CSV/TSV file with no header and only two columns
+#Output: reads CSV/TSV and computes an index:value dictionary
 def two_column_csv(infile, sep="\t"):
 	data = {}
 	with open(infile, "r") as inf:
@@ -567,7 +630,8 @@ def two_column_csv(infile, sep="\t"):
 					data[pieces[0]] = pieces[1]
 	return(data)
 
-#create a scatterplot using data from df of col1 vs col2
+#Input: dataframe, names of x and y columns
+#Output: generates a scatterplot of x and y data in dataframe
 def scatterplot(df, col1, col2):
 	x = list(df[col1])
 	y = list(df[col2])
@@ -582,6 +646,8 @@ def scatterplot(df, col1, col2):
 		print(col1 + " " + col2)
 		print(e)
 
+#Input: Dictionary of sequences
+#Output: name and sequence for sequence of median length
 def median_seqs(seqs):
 	seqs = [(name, seq) for name,seq in seqs.items()]
 	lens = [len(pair[1]) for pair in seqs]
@@ -589,7 +655,8 @@ def median_seqs(seqs):
 	index = lens.index(middle)
 	return(seqs[index])
 
-#read a codon usage table (CUT) file
+#Input: path to codon usage table file
+#Output: dictionary of codon:count
 def parse_cut(infile):
 	codon_data = {}
 	with open(infile, "r") as codonfile:
@@ -604,7 +671,8 @@ def parse_cut(infile):
 					raise Exception("Incorrect datafile")
 	return(codon_data)
 
-#returns either a function on a value, or some default value if error
+#Input: input, function, default value
+#Output: output of function on input, or default if errors are encountered
 def func_or_default(l, func=math.log, default=0.0, verbose=False):
 	try:
 		return(func(l))
@@ -614,14 +682,16 @@ def func_or_default(l, func=math.log, default=0.0, verbose=False):
 		return(default)
 
 
-#writes a fasta file
+#Input: dictionary of name:seq sequences, path to file
+#Output: writes a multiple-sequence fasta file
 def write_fasta(seqs, outf):
 	with open(outf, "w") as outf:
 		for name, seq in seqs.items():
 			outf.write(">" + name + "\n")
 			outf.write(seq + "\n")
 
-#parses a fasta file
+#Input: path to file
+#Output: dictionary of name:sequence for sequences
 def read_fasta(inf, aformat="FIRST", duplicate="replace"):
 	data = {}
 	with open(inf, "r") as fa:
@@ -657,7 +727,9 @@ def read_fasta(inf, aformat="FIRST", duplicate="replace"):
 				data[name] = data[name] + line.strip()
 	return(data)
 
-#function to combine different hits from the same sequence from BLAST
+#Input: sequences output from BLAST
+#Output: sequences combined if they have the same RefSeq/GenBank accession ID
+#combines different hits from the same sequence from BLAST
 def agglomerate_seqs(seqs):
 	newseqs = {seqid.split(":")[0]:{name.split(":")[1].split("-")[0]:seq for name, seq in seqs.items() if name.split(":")[0] == seqid.split(":")[0]} for seqid in seqs}
 	newseqs = {seqid:sorted(seqs.items(), key=lambda kv: kv[0]) for seqid, seqs in newseqs.items()}
@@ -665,33 +737,42 @@ def agglomerate_seqs(seqs):
 	newseqs = {seqid:"".join(seqs) for seqid, seqs in newseqs.items()}
 	return(newseqs)
 
+#Input: array of values
+#Output: mean of values
 def calc_mean(arr):
 	return(sum(arr)/len(arr))
 
-#determines whether i is in any of the ranges
+#Input: a value: a list of length-2 lists [[a,b], [c,d], ..., [e,f]]
+#Output: indicates if i is in any range
 def contained(i, ranges):
 	for range_vals in ranges:
 		if i >= range_vals[0] and i <= range_vals[1]:
 			return 1
 	return 0
 
-#read only the accession key from a string
+#Input: string
+#Output: finds a substring resembling an NCBI accession, with version
 def get_accession(key):
 	return max(re.findall("\w+\_?\d+\.?\d*", key))
 
-#reads the mutation data from a string
+#Input: string
+#Output: position and characters changed
+#multiple use mutation parser, can parse different formats
 def get_mutation_data(line):
 	aas = re.findall("[a-zA-Z*]", line)
 	pos = int(max(re.findall("\d+", line), key=lambda kv: int(kv)))
 	return pos, aas
 
+#Input: mutation, reference sequence, index of mutation (usually 1)
+#Output: indicates if reference character in mutation matches sequence
 def check_mut(mut, seq, index=1):
 	if isinstance(mut, str) and not isinstance(mut, (tuple, list)):
 		mut = get_mutation_data(mut)
 	if not seq[mut[0]-index] == mut[1][0]:
 		raise Exception("Sequence does not match mutant: " + str(mut) + " vs " + seq[mut[0]-index])
 
-#checks if a string (or object) can be represented as a number
+#Input: any string or object
+#Output: indicates if string is numeric
 def is_numeric(s):
 	try:
 		float(s)
@@ -699,7 +780,8 @@ def is_numeric(s):
 	except Exception as e:
 		return False
 
-#converts a string (or variable) to a number if it's numeric
+#Input: string
+#Output: string converted to number if is numeric
 def convert_to_num(s):
 	if is_numeric(s):
 		if float(s) == int(float(s)):
@@ -726,33 +808,17 @@ def get_mutant_aa(ntmut, ntseq, aaseq=None, index=0):
 			print("AA sequence isn't long enough to match NT sequence")
 	return((codonpos//3+index, (wtaa, mutaa)))
 
+#Input: value
+#Output: indicates if value is valid numeric (False)
+#nan numbers are numeric but not useful
 def is_nan(val):
 	if is_numeric(val) and not np.isnan(val):
 		return(False)
 	else:
 		return(True)
 
-#reads a sheet of data containing ranges (domains or exons)
-def read_ranges(wb, ws_name):
-	ws = wb[ws_name]
-
-	regions = {}
-	for row in ws.iter_rows(min_row=2, min_col=1):
-		name = ""
-		val = []
-		for cell in row:
-			if cell.column is 'A': #labels column
-				name = str(cell.value)
-				i = 1
-				while name in regions.keys(): #forces unique region names (dictionary keys)
-					i = i+1
-					name = cell.value + " " + str(i)
-			else: #values column
-				val.append(int(cell.value))
-		regions[name] = val
-	return regions
-
-#computes n-dimensional cartesian product of a string or list
+#Input: list of values, integer n
+#Output: n-dimensional cartesian product
 def perm(l, n, mode="list"):
 	if l == [] or l == "" or n == 0:
 		if mode in ["string", "str", "s"]:
@@ -769,6 +835,8 @@ def perm(l, n, mode="list"):
 				return_val.append([i] + i_sub)
 	return(return_val)
 
+#Input: sequences
+#Output: dictionary of codon:count
 #calculates codon counts for a sequence and adds them to dictionary
 def calc_cu_seq(seq, d={}):
 	for s in perm(["T", "G", "A", "C"], 3):
@@ -779,40 +847,8 @@ def calc_cu_seq(seq, d={}):
 		d[codon] = d[codon] + 1
 	return(d)
 
-#computes the codon usage dictionary for an input file
-def calc_cut(inf):
-	d = {}
-	seq = ""
-	cdinfo = []
-	numseqs = 0
-	numcodons = 0
-	with open(inf, "r") as inf:
-		for line in inf:
-			if ">" in line or "#" in line:
-				for cds in cdinfo:
-					try:
-						#look for coding sequence info in header
-						cd_range = re.findall("\d+", cds)
-						if len(cd_range) >= 2:
-							seq = seq[int(cd_range[0])-1:int(cd_range[1])-1]
-						else:
-							pass
-						#if sequences have been read, add their counts to dictionary
-						if seq != "":
-							d = calc_cu_seq(seq, d)
-							numcodons = numcodons + (len(seq)//3)
-					except Exception as e: #skip sequence
-						print(str(e))
-				#read new info
-				cdinfo = re.findall("CDS:\d+-\d+", line)
-				seq = ""
-				numseqs = numseqs + 1
-			else:
-				seq = seq + line.strip()
-	print(str(numseqs) + " sequences read")
-	print(str(numcodons) + " codons read")
-	return(d)
-
+#Input: dictionary of codon:count
+#Output: W (codon adaptation index)
 #computes relative adaptiveness from a codon usage dictionary
 def calc_w(d):
 	w = {}
@@ -823,12 +859,16 @@ def calc_w(d):
 			w[k] = 1
 	return(w)
 
+#Input: nucleotide sequences
+#Output: complement sequence
 #gives complement of NT sequence
 def complement(seq):
 	seq = seq.upper()
 	seq = (((((seq.replace("A", "X")).replace("T", "A")).replace("X", "T")).replace("C", "Y")).replace("G", "C")).replace("Y", "G")
 	return(seq)
 
+#Input: dictionary of sequences
+#Output dictionary of multiple sequence alignment from Clustal Omega
 #aligns sequences (input as a dictionary of sequence name: sequence)
 def align_sequences(seqs, clustalo_cmd='/usr/bin/clustalo'):
 	with subprocess.Popen([clustalo_cmd, '-i', '-'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as proc:
@@ -848,6 +888,8 @@ def align_sequences(seqs, clustalo_cmd='/usr/bin/clustalo'):
 			print(line.strip())
 	return(aligned_seqs)
 
+#Input: sequences
+#Output: checksum of sequence (for GCG)
 def checksumCGC(seq):
 	seq = seq.upper()
 	check = 0
@@ -856,6 +898,9 @@ def checksumCGC(seq):
 			check += ((i % 57) + 1) * ord(seq[i])
 	return(check % 10000)
 
+#Input: path to input file in FASTA format
+#Output: writes GCG file equivalent to FASTA file
+#converts a FASTA file to GCG format
 def fasta_to_gcg(infile, alphabet="-ACDEFGHIKLMNPQRSTVWY"):
 	seqs = read_fasta(infile)
 	with open(os.path.splitext(infile)[0]+".gcg", "w") as outf:
@@ -871,7 +916,8 @@ def fasta_to_gcg(infile, alphabet="-ACDEFGHIKLMNPQRSTVWY"):
 				else:
 					outf.write(seq[i])
 			outf.write("\n\n")
-
+#input: dictionary of sequences, additional parameters to give
+#Output: aligned sequences from Clustal Omega
 #aligns sequences with opportunities for additional parameters (input as a dictionary of sequence name: sequence)
 def align_sequences_params(seqs, mode="clustalo", clustalo_cmd='/usr/bin/clustalo', params="", tmpdir="/media/temp/"):
 	write_fasta(seqs, tmpdir + "in.fasta")
@@ -881,6 +927,9 @@ def align_sequences_params(seqs, mode="clustalo", clustalo_cmd='/usr/bin/clustal
 		clustalo_output, clustalo_err = proc.communicate()
 	return(read_fasta(tmpdir + "out.fasta"))
 
+#Input: name of codon pair (ABCDEF), dictionary of codon pair:count
+#Output: codon pair score for input codon pair
+#computed codon pair score
 def cps(bicodon, d):
 	a = b = x = y = 0.0
 	ab = xy = 0.0
@@ -903,43 +952,8 @@ def cps(bicodon, d):
 	except Exception as e:
 		return(e)
 
-def cps_positions(x, y, d):
-	if x in d.keys() and y in d.keys():
-		cps = cps(d[x][1]+d[y][1], d)
-		if is_numeric(cps):
-			return(float(cps))
-	return(0)
-
-def opt_cpb(seq, mode="max"):
-	d = aaseq_posdict(seq)
-	cpb = 0
-	count = 0
-	for i in range(len(d)-1):
-		cps = cps(d[i][1]+d[i+1][1], d)
-		if is_numeric(cps):
-			cpb = cpb + cps
-			count = count + 1
-	cpb = cpb/count
-
-	for i in range(len(d)**2):
-		rand_pos = random.randint(0, len(d))
-		x,y = random.sample([i for i in range(len(d)) if d[i][0] == d[rand_pos][0]],2)
-		orig = 0
-		changed = 0
-		for p in [x, x-1, y, y-1]:
-			orig = orig + cps_positions(p, p+1,  d)
-		
-		for pair in [[x, y+1], [x-1, y], [y, x+1], [y-1, x]]:
-			changed = changed + cps_positions(pair[0], pair[1], d)
-
-		rand = random.random()
-		if (changed > orig and mode == "max") or (changed < orig and mode == "min") or rand >= 0.5 + i/2.0/((len(d))**2):	
-			tmp = d[x]
-			d[x] = d[y]
-			d[y] = tmp
-			cpb = cpb - orig/count + changed/count
-	return(cpb, d)
-
+#Input: a numeric list of dictionary of key:value
+#Output: normalized data (relative to empirical mean and standard deviation)
 #normalizes a list of numbers to z-scores
 def normalize(data):
 	if isinstance(data, (dict,)):
@@ -954,10 +968,15 @@ def normalize(data):
 			data[i] = (data[i] - u)/o
 	return(data)
 
+#Input: value and a list of values
+#Output: empirical p-value (2*fraction of values in l more extreme than val)
+#will take whichever side of l would result in a lower p-value
 def pval_dist(val, l):
 	l = [float(xi) for xi in l if is_numeric(xi) and not np.isnan(float(xi))]
 	return(2/len(l)*min([len([xi for xi in l if xi < val]), len([xi for xi in l if xi > val])]))
 
+#Input: a list of object
+#Output: dimensions of object
 #returns dimension of a multi-dimensional data structure
 def dim(l):
 	if isinstance(l, (str,)):
@@ -971,29 +990,31 @@ def dim(l):
 	else:
 		return([length])
 
+#Input: two arrays of same length
+#Output: same arrays, but only positions that are numeric and not NaN in both
 def clean_arrays(arr1, arr2):
 	good = [i for i in range(len(arr1)) if is_numeric(arr1[i]) and not np.isnan(float(arr1[i])) and is_numeric(arr2[i]) and not np.isnan(float(arr2[i]))]
 	return([float(arr1[i]) for i in good], [float(arr2[i]) for i in good])
 
+#Input: two arrays of same length
+#Output: mean absolute percent error of two arrays
 def calc_mape(arr1, arr2):
 	if len(arr1) != len(arr2):
 		raise Exception("Arrays have different lengths.")
 	return(100*np.mean([abs(arr1[i]-arr2[i])/arr1[i] for i in range(len(arr1)) if arr1[i] != 0]))
 
+#Input: two arrays of same length
+#Output: mean absolute square error of two arrays
 def calc_mse(arr1, arr2):
 	if len(arr1) != len(arr2):
 		raise Exception("Arrays have different lengths.")
 	return(sum([(arr1[i]-arr2[i])**2 for i in range(len(arr1))])/len(arr1))
 
+#Input: string (usually parsed from website)
+#Output: decoded string if bytes, else original string
+#Note: this is useful when receiving data from internet, as encoding may raise issues
 def clean_web_bytes(s):
 	if isinstance(s, bytes):
 		return(s.decode("utf-8"))
 	else:
 		return(s)
-
-def combine_fasta(fasta):
-	seqs = read_fasta(fasta)
-	seqs = {k.split(":")[0]:{int(k2.split(":")[1].split("-")[0]):v2 for k2,v2 in seqs.items() if k2.split(":")[0] == k.split(":")[0]} for k in seqs}
-	seqs = {k:sorted(v.items(), key=lambda kv: kv[0]) for k,v in seqs.items()}
-	seqs = {k: "".join([vi[1] for vi in v]) for k,v in seqs.items()}
-	return(seqs)

@@ -7,12 +7,16 @@ import score_variants, compute_features, create_analysis
 
 animals = ["Papio anubis", "canis lupus familiaris", "rhinolophus sinicus", "Mesocricetus auratus",  "mus musculus", "Rattus norvegicus", "Callithrix jacchus", "Oryctolagus cuniculus", "Cavia porcellus", "Mustela putorius furo", "Felis catus", "Manis javanica", "Macaca mulatta"]
 
+#Input: sequence
+#Output: determines if sequence could be an open reading frame (length is divisible by 3, and translation starts with M, ends with *)
 def is_cds(seq):
 	if len(seq) % 3 == 0 and compute_features.translate_seq(seq)[0] == "M" and compute_features.translate_seq(seq)[-1] == "*":
 		return True
 	else:
 		return False
 
+#Input: name of gene, name of organism, taxid of organism
+#Output: ORF sequence corresponding to gene homologue in organism
 def get_animal_seq(genename, organism, taxid=None, wait_time=1):
 	searchhandle = tools.retry_func(Entrez.esearch, [], {'db':"nuccore", 'term':genename + "[Gene Name] AND " + organism + "[Organism]"}, wait=5)
 	if searchhandle != None:
@@ -40,6 +44,8 @@ def get_animal_seq(genename, organism, taxid=None, wait_time=1):
 				print(str(ids[i]) + ":\t" + str(e))
 	return(None)
 
+#Input: list of variants in HGVS format
+#Output: dictionary of variant:minor allele frequency, as queried from VEP
 def get_frequencies(variants):
 	server = "https://rest.ensembl.org"
 	ext = "/vep/human/hgvs"
@@ -64,6 +70,8 @@ def get_frequencies(variants):
 		update_time(i, len(variants), init_time)
 	return(data)
 
+#Input: List of PDB IDs as [[AAAA, B], [CCCC, D], ..., [YYYY, Z]], where AAAA is the PDB ID and B is the chain name
+#Output: gene ontology terms for each PDB ID
 def get_GOs(pdbs):
 	if isinstance(pdbs, dict) and not isinstance(pdbs, (list, tuple,)):
 		pdbs = [[k.lower(), v["chain"].upper()] for k,v in pdbs.items()]
@@ -88,6 +96,8 @@ def get_GOs(pdbs):
 		update_time(i, len(pdbs), init_time)
 	return(data, d)
 
+#Input: list of PDBs as [[AAAA, B], [CCCC, D], ..., [YYYY, Z]], where AAAA is the PDB ID and B is the chain name
+#Output: dictionary of PDB ID: gene name
 def get_genename_from_pdb(pdblist, taxid="9606"):
 	letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	names = {}
@@ -108,9 +118,10 @@ def get_genename_from_pdb(pdblist, taxid="9606"):
 	return({k:list(set(v)) for k,v in names.items()})
 				
 		
-
+#Input: name of gene
+#Output: dictionary of all synonymous variants in gene from dbSNP and associated computed features
 def get_syn(genename, seq=None, refid=None, path="/media/temp/", outdir="/media/home/workspace/Coronavirus/interactome/", space = "-", index=1, quiet=False):
-	if seq == None or refid == None:
+	if seq == None or refid == None: #lookup the accession ID and sequences
 		seqids = bio_tools.get_accids(genename, organism="homo sapiens")
 		refids = sorted(seqids["mRNA"], key=lambda kv: int(max(re.findall("\d+", kv[0]), key=len)))
 		refids = [x[0] for x in refids]
@@ -119,18 +130,20 @@ def get_syn(genename, seq=None, refid=None, path="/media/temp/", outdir="/media/
 	else:
 		refids = [refid]
 
+	#query in BLAST to find homologous sequences
 	blastFlag = False
 	if not os.path.exists(outdir + genename + "_nt_msa.fasta") or tools.read_fasta(outdir + genename + "_nt_msa.fasta")[genename].replace("-", "") != seq:
 		p_nt = Process(target=compute_features.run_blast, args=(seq, genename, "nt", "nt", "blastn", True, None, path, space))
 		p_nt.start()
 		blastFlag = True
 
+	#look up gene in NCBI to find associated identifer
 	r = tools.retry_request(requests.get, ['https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=snp&term=(((' + genename.lower() + '%5BGene%20Name%5D)%20AND%20"snv"%5BSNP%20Class%5D)%20AND%20"synonymous%20variant"%5BFunction%20Class%5D)&retmax=' + str(len(seq)*4)], {})
 	ids = re.findall("\<Id\>(\d+)\<\/Id\>", r.text)
 	
 	init_time = time.time()
 	variants = []
-	for i in range(len(ids)//50):
+	for i in range(len(ids)//50): #Find all SNVs in dbSNP
 		idsub = ids[50*i:min(50*(i+1), len(ids)+1)]
 		r = tools.retry_request(requests.post, ["https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=snp&id=" + ",".join(idsub)], {})
 		possible_variants = re.findall("NM\_\d+\.?\d*\:c\.\d+[A-Z]\&gt\;[A-Z]", r.text) + re.findall("NM\_\d+\.?\d*\:c\.\d+[A-Z]\>[A-Z]", r.text)
@@ -150,11 +163,11 @@ def get_syn(genename, seq=None, refid=None, path="/media/temp/", outdir="/media/
 	headers={ "Content-Type" : "application/json", "Accept" : "application/json"}
 	data = {}
 	init_time = time.time()
-	varquery = [genename + ":c." + var.split(":c.")[-1] for var in variants]
+	varquery = [genename + ":c." + var.split(":c.")[-1] for var in variants] #list of all variants
 	try:
 		r = tools.retry_request(requests.post, positional_arguments=[server+ext], keyword_arguments={"headers":headers, "data":'{ "hgvs_notations" : ' + str(varquery).replace("\'", "\"") + ' }'})
 		decoded = r.json()
-		for i in range(len(decoded)):
+		for i in range(len(decoded)): #parse output from VEP
 			try:
 				var = tools.seek_in_struct(decoded[i], ['input'])["input"]
 				data[var] = tools.seek_in_struct(decoded[i], ["frequencies"])["frequencies"]
@@ -176,21 +189,21 @@ def get_syn(genename, seq=None, refid=None, path="/media/temp/", outdir="/media/
 		nt_seqs = tools.read_fasta(path + "nt_msa.fasta", aformat="WHOLE")
 	else:
 		nt_seqs = tools.read_fasta(outdir + genename + "_nt_msa.fasta")
-	for organism in animals:
+	for organism in animals: #Add gene sequences from a set of related animals (this is useful because sometimes very few sequences are returned from BLAST)
 		if organism not in nt_seqs.keys():
 			animalseq = get_animal_seq(genename, organism, taxid=None, wait_time=1)
 			if animalseq != None:
 				nt_seqs[organism] = animalseq
 	if any([True if len(nt_seqs[k]) != len(nt_seqs[genename]) else False for k in nt_seqs.keys()]):
 		nt_seqs = {k:v.replace("-", "") for k,v in nt_seqs.items()}
-	ntalignment, conservation["NT conservation"], conservation["NT entropy"], conservation["NT variance"] = compute_features.compute_conservation(nt_seqs, genename, mode="nt")
+	ntalignment, conservation["NT conservation"], conservation["NT entropy"], conservation["NT variance"] = compute_features.compute_conservation(nt_seqs, genename, mode="nt") #align sequences and computed conservation scores
 	dist = score_variants.compute_distribution(ntalignment, genename, space="-", alphabet="")
 	conservation["Rare codon enrichment"] = compute_features.rc_enrichment(nt_seqs, genename, quiet=True)
 
 	if blastFlag:
 		write_fasta(ntalignment, outdir + genename + "_nt_msa.fasta")
 	'''
-	if not os.path.exists(outdir + genename + "_outfile.csv"):
+	if not os.path.exists(outdir + genename + "_outfile.csv"):#doesn't work
 		try:
 			available_memory = (psutil.virtual_memory().available/1073741824)
 			if available_memory <= (1/806.0)**2*(len(seq)**2):
@@ -213,7 +226,7 @@ def get_syn(genename, seq=None, refid=None, path="/media/temp/", outdir="/media/
 	minmax = compute_features.get_minmax(seq, genename)
 
 	init_time = time.time()
-	for j, var in enumerate(data.keys()):
+	for j, var in enumerate(data.keys()): #compute features for all variants
 		mut = get_mutation_data(str(var.split(":c.")[-1]))
 		if len(seq) <= mut[0] - index:
 			warnings.warn("Variant " + str(var) + " beyond end of sequence " + str(genename))
@@ -255,12 +268,12 @@ def get_syn(genename, seq=None, refid=None, path="/media/temp/", outdir="/media/
 		cp1_mut = mutseq[codonstart-3:codonstart+3]
 		cp2_mut = mutseq[codonstart:codonstart+6]
 
-		for column in codondata:
+		for column in codondata: #compute all codon features
 			try:
 				data[var]["Δ " + column] = codondata.at[c_mut, column] - codondata.at[c_WT, column]
 			except:
 				data[var]["Δ " + column] = ""
-		for column in cpdata:
+		for column in cpdata: #compute all codon pair features
 			try: 
 				data[var]["Δ " + column + " 1"] = cpdata.at[cp1_mut, column] - cpdata.at[cp1_WT, column]
 			except:
@@ -277,62 +290,10 @@ def get_syn(genename, seq=None, refid=None, path="/media/temp/", outdir="/media/
 	pd.DataFrame(data).T.to_csv(outdir + genename + "_syn.tsv", sep="\t")
 	return(data)
 
-def compute_codon(seq, data, genename, index=1):
-	codondata = pd.read_csv("/media/home/workspace/DB/sources/codondata.csv", sep="\t", header=0, index_col=0) #file containing the genomic codon data
-	cpdata = pd.read_csv("/media/home/workspace/DB/sources/codonpairdata.csv", sep="\t", header=0, index_col=0) #file containing the genomic codon pair data
-	minmax = compute_features.get_minmax(seq, genename)
-	for var in data.keys():
-		mut = get_mutation_data(str(var.split(":c.")[-1]))
-		if len(seq) <= mut[0] - index:
-			warnings.warn("Variant " + str(var) + " beyond end of sequence " + str(genename))
-			continue
-		elif seq[mut[0] - index] != mut[1][0]:
-			warnings.warn("NTs don't match for " + str(var) + ", actual value is " + seq[mut[0] - index])
-		try:
-			data[var]["%MinMax"] = minmax["%minmax"][(mut[0]-index)//3]
-			data[var]["%MinMax control"] = minmax["%minmax control"][(mut[0]-index)//3]
-		except KeyError as e:
-			data[var]["%MinMax"] = data[var]["%MinMax control"] = ""
-		substring = subseq(seq, mut[0]-index, 75)
-		mutstring = subseq(update_str(seq, mut[1][1], mut[0]-index), mut[0]-index, 75)
-		try:
-			data[var]["delta mRNA MFE (Kinefold)"] = compute_features.run_kinefold(mutstring) - compute_features.run_kinefold(substring)
-		except RuntimeError as e:
-			print(str(var) + "\t" + str(e))
-		data[var]["delta mRNA MFE (RNAfold)"] = compute_features.get_RNAfold(mutstring) - compute_features.get_RNAfold(substring)
-		data[var]["delta mRNA MFE (NUPACK)"] = compute_features.run_nupack(mutstring) - compute_features.run_nupack(substring)
-
-		mutseq = update_str(seq, mut[1][1], mut[0]-index)
-
-		#compute codon and codon pair for WT and mutant
-		posincodon = (mut[0] -index) % 3
-		codonstart = (mut[0] - index) - posincodon
-		c_WT = seq[codonstart:codonstart+3]
-		cp1_WT = seq[codonstart-3:codonstart+3]
-		cp2_WT = seq[codonstart:codonstart+6]
-
-		c_mut = mutseq[codonstart:codonstart+3]
-		cp1_mut = mutseq[codonstart-3:codonstart+3]
-		cp2_mut = mutseq[codonstart:codonstart+6]
-
-		for column in codondata:
-			try:
-				data[var]["Δ " + column] = codondata.at[c_mut, column] - codondata.at[c_WT, column]
-			except:
-				data[var]["Δ " + column] = ""
-		for column in cpdata:
-			try: 
-				data[var]["Δ " + column + " 1"] = cpdata.at[cp1_mut, column] - cpdata.at[cp1_WT, column]
-			except:
-				data[var]["Δ " + column + " 1"] = ""
-			try:
-				data[var]["Δ " + column + " 2"] = cpdata.at[cp2_mut, column] - cpdata.at[cp2_WT, column]
-			except:
-				data[var]["Δ " + column + " 2"] = ""
-	return(data)
-
+#Input: name of gene
+#Output: dictionary of all missense variants in gene from dbSNP and associated computed features
 def get_nonsyn(genename, seq=None, refid=None, path="/media/temp/", outdir="/media/home/workspace/Coronavirus/interactome/", space = "-", index=1, quiet=False):
-	if seq == None or refid == None:
+	if seq == None or refid == None: #lookup the accession ID and sequences
 		seqids = bio_tools.get_accids(genename, organism="homo sapiens")
 		refids = sorted(seqids["mRNA"], key=lambda kv: int(max(re.findall("\d+", kv[0]), key=len)))
 		refids = [x[0] for x in refids]
@@ -342,6 +303,7 @@ def get_nonsyn(genename, seq=None, refid=None, path="/media/temp/", outdir="/med
 		refids = [refid]
 	aaseq = compute_features.translate_seq(seq)
 
+	#query in BLAST to find homologous sequences
 	blastFlag = False
 	if not os.path.exists(outdir + genename + "_aa_msa.fasta") or tools.read_fasta(outdir + genename + "_aa_msa.fasta")[genename].replace("-", "") != aaseq:
 		p_aa = Process(target=compute_features.run_blast, args=(seq, genename, "aa", "nr", "blastp", True, None, path, space))
@@ -401,7 +363,7 @@ def get_nonsyn(genename, seq=None, refid=None, path="/media/temp/", outdir="/med
 	minmax = compute_features.get_minmax(seq, genename)
 	conservation = {}
 
-	try:
+	try: #compute post-translational modifications for WT sequence
 		conservation["O-linked Glycosylation potential"] = compute_features.run_netOglyc(seq)
 		conservation["Phosphorylation potential"] = compute_features.run_netphos(seq, path=path)
 		conservation["N-linked Glycosylation potential"] = compute_features.run_netNglyc(seq, path=path)
@@ -412,7 +374,7 @@ def get_nonsyn(genename, seq=None, refid=None, path="/media/temp/", outdir="/med
 	
 	if not quiet:
 		print("Computing surface area with NetSurfP2")
-	try:
+	try: #compute relative surface area for WT sequence
 		conservation["Relative surface area (NetsurfP2)"], conservation["Relative surface area (NetsurfP2)"], conservation["SS3 (NetsurfP2)"], conservation["SS8 (NetsurfP2)"], conservation["Disorder"] = compute_features.run_netsurfp(seq, genename)
 	except Exception as e:
 		tb = traceback.format_exc()
@@ -422,7 +384,7 @@ def get_nonsyn(genename, seq=None, refid=None, path="/media/temp/", outdir="/med
 	if blastFlag:
 		p_aa.join()
 		aa_seqs = tools.read_fasta(path + "aa_msa.fasta", aformat="WHOLE")
-	for organism in animals:
+	for organism in animals: #search for homologous sequences in related animals
 		if organism not in aa_seqs.keys():
 			animalseq = get_animal_seq(genename, organism, taxid=None, wait_time=1)
 			if animalseq != None:
@@ -455,7 +417,7 @@ def get_nonsyn(genename, seq=None, refid=None, path="/media/temp/", outdir="/med
 	'''
 	
 	init_time = time.time()
-	for j, var in enumerate(data.keys()):
+	for j, var in enumerate(data.keys()): #compute all variant features
 		mut = get_mutation_data(str(var.split(":c.")[-1]))
 		aamut = get_mutant_aa(mut, seq, aaseq=aaseq, index=1)
 		if len(seq) <= mut[0] - index:
@@ -522,11 +484,3 @@ def get_nonsyn(genename, seq=None, refid=None, path="/media/temp/", outdir="/med
 	pd.DataFrame(data).T.to_csv(outdir + genename + "_nonsyn.tsv", sep="\t")
 	return(data)
 
-def gen_seqs(genomic, locations, space="-"):
-	orf = "".join([genomic[locations[i][0]:locations[i][1]] for i in range(len(locations))])
-	transcript = orf
-	aligned_seqs = tools.align_sequences({"genomic_aligned":genomic[locations[0][0]:locations[-1][1]], "ORF_aligned":orf, "transcript_aligned": transcript})
-	aligned_seqs["ORF"] = aligned_seqs["ORF_aligned"].replace(space, "")
-	aligned_seqs["transcript"] = aligned_seqs["transcript_aligned"].replace(space, "")
-	aligned_seqs["genomic"] = aligned_seqs["genomic_aligned"].replace(space, "")
-	return(aligned_seqs)
